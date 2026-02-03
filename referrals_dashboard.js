@@ -211,7 +211,18 @@ async function addTrainer() {
     passwordEl.value = "";
     Object.values(promoInputs).forEach((input) => { input.value = ""; });
     await loadTrainers();
-    openCredentialsModal(res.trainer, res.credentials);
+    let credentials = res.credentials || {};
+    if (!credentials?.login || !credentials?.password) {
+      try {
+        const reset = await api(`/admin/referrals/trainers/${res.trainer?.trainer_id}/reset-password`, {
+          method: "POST",
+        });
+        credentials = reset?.credentials || credentials;
+      } catch (_) {
+        // ignore reset errors; modal will show placeholders
+      }
+    }
+    openCredentialsModal(res.trainer, credentials);
   } catch (e) {
     let message = e?.message || "Ошибка добавления тренера";
     try {
@@ -230,14 +241,16 @@ async function addTrainer() {
 function openCredentialsModal(trainer, credentials) {
   const modal = qs("credentialsModal");
   qs("credentialsTitle").textContent = trainer?.name ? `Доступы: ${trainer.name}` : "Доступы тренера";
-  qs("credLogin").textContent = credentials?.login || "—";
-  qs("credPassword").textContent = credentials?.password || "—";
+  const loginValue = credentials?.login || trainer?.login || "—";
+  const passwordValue = credentials?.password || "";
+  qs("credLogin").textContent = loginValue;
+  qs("credPassword").textContent = passwordValue || "—";
   qs("credPassword").dataset.hidden = "1";
   qs("credPassword").textContent = "••••";
   qs("togglePasswordBtn").textContent = "Показать";
   modal.classList.add("show");
-  modal.dataset.login = credentials?.login || "";
-  modal.dataset.password = credentials?.password || "";
+  modal.dataset.login = loginValue === "—" ? "" : loginValue;
+  modal.dataset.password = passwordValue;
 }
 
 function closeCredentialsModal() {
