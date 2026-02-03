@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Реферальная программа — дашборд</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="referrals_dashboard.css?v=7">
+</head>
+<body>
+  <div class="wrap">
+    <header class="header">
+      <div>
+        <h1>Реферальная программа</h1>
+        <p class="subtitle">Тренеры, промокоды и выплаты по клиентам</p>
+      </div>
+      <div class="kpi-bar" id="summaryStats">—</div>
+    </header>
+
+    <section class="controls">
+      <div class="period">
+        <span>Период:</span>
+        <button class="period-btn active" data-days="7">7 дней</button>
+        <button class="period-btn" data-days="30">30 дней</button>
+        <button class="period-btn" data-days="60">60 дней</button>
+      </div>
+      <div class="search">
+        <input id="trainerSearch" type="text" placeholder="Поиск по имени, логину или промокоду">
+      </div>
+    </section>
+
+    <section class="grid-top">
+      <div class="card form-card">
+        <div class="card-head">
+          <h2>Добавить тренера</h2>
+          <p class="card-subtitle">Создай доступ и промокоды. Пароль показываем один раз.</p>
+        </div>
+        <div class="form-main">
+          <label class="field-label" for="trainerName">Имя тренера</label>
+          <input id="trainerName" type="text" placeholder="Например, Дарья Глыба">
+
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label" for="trainerLogin">Логин</label>
+              <input id="trainerLogin" type="text" placeholder="trainer_daria">
+            </div>
+            <div class="field">
+              <label class="field-label" for="trainerPassword">Пароль</label>
+              <input id="trainerPassword" type="text" placeholder="пароль (опционально)">
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button id="addTrainerBtn" type="button">Добавить тренера</button>
+            <span class="hint">Если логин/пароль пустые — сгенерируем.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card promo-card">
+        <div class="card-head">
+          <h2>Промокоды по суммам</h2>
+          <p class="card-subtitle">4 цифры, копирование в 1 клик</p>
+        </div>
+        <div class="promo-grid">
+          <div class="promo-field">
+            <label for="promo1000">1000 ₽</label>
+            <div class="promo-input">
+              <input id="promo1000" type="text" placeholder="1234">
+              <button type="button" data-gen="promo1000" title="Сгенерировать">↻</button>
+              <button type="button" data-copy-input="promo1000" title="Копировать">⧉</button>
+            </div>
+          </div>
+          <div class="promo-field">
+            <label for="promo2000">2000 ₽</label>
+            <div class="promo-input">
+              <input id="promo2000" type="text" placeholder="1234">
+              <button type="button" data-gen="promo2000" title="Сгенерировать">↻</button>
+              <button type="button" data-copy-input="promo2000" title="Копировать">⧉</button>
+            </div>
+          </div>
+          <div class="promo-field">
+            <label for="promo3000">3000 ₽</label>
+            <div class="promo-input">
+              <input id="promo3000" type="text" placeholder="1234">
+              <button type="button" data-gen="promo3000" title="Сгенерировать">↻</button>
+              <button type="button" data-copy-input="promo3000" title="Копировать">⧉</button>
+            </div>
+          </div>
+          <div class="promo-field">
+            <label for="promo4000">4000 ₽</label>
+            <div class="promo-input">
+              <input id="promo4000" type="text" placeholder="1234">
+              <button type="button" data-gen="promo4000" title="Сгенерировать">↻</button>
+              <button type="button" data-copy-input="promo4000" title="Копировать">⧉</button>
+            </div>
+          </div>
+          <div class="promo-field">
+            <label for="promo5000">5000 ₽</label>
+            <div class="promo-input">
+              <input id="promo5000" type="text" placeholder="1234">
+              <button type="button" data-gen="promo5000" title="Сгенерировать">↻</button>
+              <button type="button" data-copy-input="promo5000" title="Копировать">⧉</button>
+            </div>
+          </div>
+        </div>
+        <div class="hint">Если оставить пустым — код сгенерируется автоматически.</div>
+      </div>
+    </section>
+
+    <section class="card table-card">
+      <div class="card-head row">
+        <h2>Тренеры</h2>
+        <div class="table-status" id="tableStatus">—</div>
+      </div>
+      <div id="trainersTable" class="table"></div>
+    </section>
+  </div>
+
+  <div class="modal" id="credentialsModal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <div class="eyebrow">Доступы тренера</div>
+          <h3 id="credentialsTitle">—</h3>
+        </div>
+        <button class="icon-btn" id="closeModalBtn" type="button" title="Закрыть">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="cred-row">
+          <span>Логин</span>
+          <div class="cred-value">
+            <code id="credLogin">—</code>
+            <button type="button" data-copy="login">Копировать</button>
+          </div>
+        </div>
+        <div class="cred-row">
+          <span>Пароль</span>
+          <div class="cred-value">
+            <code id="credPassword" data-hidden="1">••••</code>
+            <button type="button" id="togglePasswordBtn">Показать</button>
+            <button type="button" data-copy="password">Копировать</button>
+          </div>
+        </div>
+        <div class="modal-note">Пароль показывается один раз. Если потеряли — сбросьте.</div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" data-copy="all">Копировать всё</button>
+        <button type="button" id="closeModalBtn2">Готово</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Скопировано</div>
+
+  <script src="referrals_dashboard.js?v=7" defer></script>
+</body>
+</html>

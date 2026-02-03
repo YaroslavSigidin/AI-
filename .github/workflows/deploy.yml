@@ -1,0 +1,79 @@
+name: Deploy to TimeWeb
+
+on:
+  push:
+    branches:
+      - main  # Измените на вашу ветку если нужно
+    paths-ignore:
+      - '*.md'
+      - '.gitignore'
+      - '*.bak.*'
+      - '*.broken.*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+    
+    - name: Deploy to server
+      env:
+        SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        SERVER_USER: ${{ secrets.SERVER_USER }}
+        SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        SSH_OPTS: ${{ secrets.SSH_OPTS }}
+      run: |
+        # Создаем временный exclude файл
+        cat > /tmp/rsync_exclude << EOF
+        .bak.*
+        *.bak.*
+        .git/
+        .gitignore
+        .env
+        *.db
+        *.sqlite
+        *.sqlite3
+        *.log
+        *.pid
+        __pycache__/
+        *.pyc
+        *.pyo
+        .venv/
+        venv/
+        .DS_Store
+        deploy.conf
+        .github/
+        EOF
+        
+        # Синхронизируем файлы
+        rsync -avz --delete \
+          --exclude-from=/tmp/rsync_exclude \
+          -e "ssh ${{ secrets.SSH_OPTS }}" \
+          ./ "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/"
+    
+    - name: Install dependencies and restart
+      env:
+        SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        SERVER_USER: ${{ secrets.SERVER_USER }}
+        SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        SSH_OPTS: ${{ secrets.SSH_OPTS }}
+      run: |
+        ssh ${{ secrets.SSH_OPTS }} "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" << 'ENDSSH'
+          cd ${{ secrets.SERVER_PATH }}
+          pip install --quiet --no-cache-dir -r requirements.txt
+          chmod +x restart.sh 2>/dev/null || true
+          ./restart.sh || echo "⚠️ Команда restart.sh не выполнена, перезапустите вручную"
+        ENDSSH
+    
+    - name: Deployment status
+      run: |
+        echo "✅ Деплой завершен успешно!"

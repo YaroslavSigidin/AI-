@@ -1,0 +1,1588 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI ТРЕНЕР — персональный AI-тренер в Telegram</title>
+  <meta name="description" content="AI Тренер в Telegram: дневник тренировок, питание, мотивация и персональные планы. Запускайте бота и следите за прогрессом 24/7." />
+  <meta name="keywords" content="AI тренер, Telegram бот, дневник тренировок, питание, планы тренировок, мотивация, фитнес" />
+  <meta name="robots" content="index, follow" />
+  <meta property="og:title" content="AI ТРЕНЕР — персональный AI-тренер в Telegram" />
+  <meta property="og:description" content="Запускайте AI Тренера в Telegram: планы, питание, мотивация и статистика прогресса в одном боте." />
+  <meta property="og:type" content="website" />
+  <script>
+    document.documentElement.classList.add('js');
+  </script>
+  <style>
+    :root {
+      --tg-blue: #2aa9ee;
+      --tg-deep: #1875be;
+      --tg-sky: #7ad6ff;
+      --glass: rgba(255, 255, 255, 0.16);
+      --glass-strong: rgba(255, 255, 255, 0.22);
+      --border: rgba(255, 255, 255, 0.35);
+      --text-main: #f7fbff;
+      --text-soft: #d7eeff;
+      --accent: #e9f6ff;
+      --shadow: 0 28px 60px rgba(7, 40, 72, 0.28);
+      --shadow-strong: 0 36px 80px rgba(7, 40, 72, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", "Rubik", "Segoe UI", sans-serif;
+      color: var(--text-main);
+      background:
+        radial-gradient(1200px 700px at 15% -10%, #8addff 0%, transparent 60%),
+        radial-gradient(900px 600px at 90% 10%, #64c8ff 0%, transparent 70%),
+        linear-gradient(150deg, var(--tg-blue) 0%, var(--tg-deep) 55%, #1464a8 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.55;
+      letter-spacing: 0.1px;
+      text-rendering: optimizeLegibility;
+    }
+
+    button {
+      font-family: inherit;
+    }
+
+    .page {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bg-lines {
+      position: absolute;
+      inset: -15% -10% auto -10%;
+      height: 60vh;
+      opacity: 0.32;
+      background: repeating-linear-gradient(
+        125deg,
+        rgba(255, 255, 255, 0.16),
+        rgba(255, 255, 255, 0.16) 1px,
+        transparent 1px,
+        transparent 36px
+      );
+      mask-image: radial-gradient(circle at 50% 40%, black 0%, transparent 70%);
+      animation: drift 16s linear infinite;
+      pointer-events: none;
+    }
+
+    .orb {
+      position: absolute;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
+      opacity: 0.7;
+      filter: blur(2px);
+      animation: float 10s ease-in-out infinite;
+    }
+
+    .orb.one { right: -140px; top: 120px; animation-delay: -2s; }
+    .orb.two { left: -180px; top: 520px; animation-delay: -5s; }
+    .orb.three { left: 42%; top: -160px; width: 320px; height: 320px; animation-delay: -8s; }
+
+    @keyframes drift {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(120px); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) translateX(0); }
+      50% { transform: translateY(22px) translateX(12px); }
+    }
+
+    .container {
+      width: min(1140px, 92vw);
+      margin: 0 auto;
+      padding: 130px 0 90px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .site-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: linear-gradient(120deg, rgba(24, 117, 190, 0.92), rgba(42, 169, 238, 0.86));
+      box-shadow: 0 18px 40px rgba(7, 40, 72, 0.25);
+      backdrop-filter: blur(18px);
+    }
+
+    .header-inner {
+      width: min(1140px, 92vw);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 12px 0;
+      flex-wrap: nowrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+
+    .brand .logo {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.24);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .nav {
+      display: flex;
+      gap: 14px;
+      font-size: 13px;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+      flex: 1;
+      justify-content: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .nav a {
+      color: var(--text-soft);
+      text-decoration: none;
+      letter-spacing: 0.4px;
+      font-weight: 600;
+      padding: 8px 12px;
+      border-radius: 999px;
+      transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    }
+
+    .nav a:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: var(--text-main);
+      transform: translateY(-1px);
+    }
+
+    .menu-toggle {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.14);
+      color: var(--text-main);
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+
+    .menu-toggle svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 22px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #e9f6ff 0%, #c9ebff 100%);
+      color: #0c4f88;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 18px 38px rgba(6, 36, 64, 0.3);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      overflow: hidden;
+      min-width: 180px;
+    }
+
+    .cta:link,
+    .cta:visited {
+      text-decoration: none;
+    }
+
+    .cta.header-cta {
+      padding: 8px 16px;
+      min-width: 150px;
+      font-size: 13px;
+    }
+
+    .cta.header-cta .btn-icon {
+      width: 28px;
+      height: 28px;
+    }
+
+    .cta .btn-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .cta svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .cta::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.7) 45%, transparent 90%);
+      transform: translateX(-140%);
+      animation: sheen 4s ease-in-out infinite;
+    }
+
+    .cta.secondary {
+      background: rgba(255, 255, 255, 0.18);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+    }
+
+    .cta.secondary .btn-icon {
+      background: rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+    }
+
+    .cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 24px 46px rgba(6, 36, 64, 0.35);
+    }
+
+    .cta:hover .btn-icon {
+      transform: translateX(4px) rotate(-6deg);
+      box-shadow: var(--shadow);
+    }
+
+    .cta:focus-visible,
+    .nav a:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.7);
+      outline-offset: 3px;
+    }
+
+    @keyframes sheen {
+      0% { transform: translateX(-140%); }
+      45% { transform: translateX(140%); }
+      100% { transform: translateX(140%); }
+    }
+
+    .section {
+      margin: 76px 0;
+      scroll-margin-top: 140px;
+    }
+
+    .section-head {
+      text-align: center;
+      max-width: 760px;
+      margin: 0 auto 32px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .section-head::after {
+      content: "";
+      width: 88px;
+      height: 4px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.1));
+      margin: 6px auto 0;
+    }
+
+    .section-head h2 {
+      font-size: clamp(28px, 3.4vw, 44px);
+      margin: 0 0 14px;
+      letter-spacing: -0.4px;
+      line-height: 1.1;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--text-soft);
+      font-size: 18px;
+      line-height: 1.6;
+      max-width: 64ch;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 28px;
+      align-items: center;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.22);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      font-size: 12px;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .hero h1 {
+      font-size: clamp(36px, 5vw, 64px);
+      margin: 16px 0 18px;
+      line-height: 1.02;
+      letter-spacing: -0.6px;
+    }
+
+    .hero-highlight {
+      display: inline-block;
+      padding: 2px 10px 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.5);
+      color: #0c4f88;
+    }
+
+    .hero p {
+      margin: 0 0 26px;
+      color: var(--text-soft);
+      font-size: 18px;
+      line-height: 1.7;
+      max-width: 60ch;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .hero-center {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .glass {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 26px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .pill-row {
+      display: grid;
+      gap: 12px;
+    }
+
+    .pill {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .icon {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: var(--shadow);
+      flex: 0 0 auto;
+      transition: transform 0.3s ease;
+    }
+
+    .icon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .card {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      min-height: 190px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: -60% -80%;
+      background: linear-gradient(120deg, transparent 35%, rgba(255, 255, 255, 0.28) 50%, transparent 65%);
+      transform: translateX(-40%) rotate(10deg);
+      transition: transform 0.5s ease;
+      pointer-events: none;
+    }
+
+    .card:hover {
+      transform: translateY(-10px) scale(1.01);
+      box-shadow: var(--shadow-strong);
+    }
+
+    .card:hover::before {
+      transform: translateX(40%) rotate(10deg);
+    }
+
+    .card:hover .icon {
+      transform: rotate(-6deg) scale(1.08);
+    }
+
+    .card h3 {
+      margin: 14px 0 10px;
+      font-size: 18px;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--text-soft);
+      line-height: 1.5;
+    }
+
+    .ticker {
+      display: flex;
+      gap: 22px;
+      padding: 12px 0;
+      overflow: hidden;
+      mask-image: linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%);
+    }
+
+    .ticker-track {
+      display: flex;
+      gap: 22px;
+      width: max-content;
+      animation: ticker 18s linear infinite;
+    }
+
+    .ticker-item {
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    @keyframes ticker {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    .steps {
+      display: grid;
+      gap: 18px;
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+      padding-left: 8px;
+    }
+
+    .steps::before {
+      content: "";
+      position: absolute;
+      left: 32px;
+      top: 12px;
+      bottom: 12px;
+      width: 2px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.1));
+      animation: lineGlow 3.8s ease-in-out infinite;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 64px 1fr;
+      align-items: center;
+      gap: 18px;
+      padding: 20px 22px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+
+    .step::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.18) 50%, transparent 70%);
+      transform: translateX(-120%);
+      transition: transform 0.6s ease;
+    }
+
+    .step:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow);
+      border-color: rgba(255, 255, 255, 0.45);
+    }
+
+    .step:hover::after {
+      transform: translateX(120%);
+    }
+
+    .step-number {
+      width: 54px;
+      height: 54px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      position: relative;
+      z-index: 2;
+      animation: pop 3.2s ease-in-out infinite;
+    }
+
+    @keyframes lineGlow {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    @keyframes pop {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+
+    .split {
+      display: grid;
+      gap: 22px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      align-items: stretch;
+    }
+
+    .ambassador-layout {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .ambassador-layout.single {
+      grid-template-columns: 1fr;
+    }
+
+    .full-bleed {
+      width: 100vw;
+      margin-left: calc(50% - 50vw);
+      margin-right: calc(50% - 50vw);
+    }
+
+
+    .ambassador-card {
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.08));
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 28px;
+      padding: 28px;
+      box-shadow: var(--shadow-strong);
+      backdrop-filter: blur(14px);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .ambassador-card.centered {
+      text-align: center;
+    }
+
+    .ambassador-card.centered .ambassador-title {
+      justify-content: center;
+      text-align: center;
+    }
+
+    .ambassador-card::after {
+      content: "";
+      position: absolute;
+      inset: -40% -60%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.28), transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .ambassador-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-strong);
+    }
+
+    .ambassador-card:hover::after {
+      opacity: 1;
+    }
+
+    .ambassador-title {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .ambassador-title h3 {
+      margin: 0;
+    }
+
+    .ambassador-title p {
+      margin: 6px 0 0;
+      color: var(--text-soft);
+      font-size: 14px;
+    }
+
+    .ambassador-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .metric {
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 16px;
+      padding: 14px;
+      text-align: center;
+      display: grid;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .metric .icon {
+      margin: 0 auto;
+    }
+
+
+    .stats {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      margin-top: 18px;
+    }
+
+    .showcase-grid {
+      display: grid;
+      gap: 22px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .showcase-card {
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.1));
+      border: 1px solid rgba(255, 255, 255, 0.32);
+      border-radius: 28px;
+      padding: 26px;
+      box-shadow: var(--shadow-strong);
+      backdrop-filter: blur(14px);
+      display: grid;
+      gap: 12px;
+      min-height: 320px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+      text-align: center;
+    }
+
+    .showcase-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 120px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent);
+      opacity: 0.6;
+    }
+
+    .showcase-card::after {
+      content: "";
+      position: absolute;
+      inset: -40% -60%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.22), transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .showcase-card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--shadow-strong);
+      border-color: rgba(255, 255, 255, 0.45);
+    }
+
+    .showcase-card:hover::after {
+      opacity: 1;
+    }
+
+    .preview {
+      border-radius: 18px;
+      padding: 16px;
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
+      border: 1px solid rgba(255, 255, 255, 0.26);
+      display: grid;
+      gap: 10px;
+    }
+
+    .preview-header {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.6);
+    }
+
+    .preview-line {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.28);
+    }
+
+    .preview-line.short {
+      width: 60%;
+    }
+
+    .icon-anim {
+      width: 44px;
+      height: 44px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: var(--shadow);
+      animation: pulse 3.2s ease-in-out infinite;
+    }
+
+    .icon-anim svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .icon-anim.spin {
+      animation: spinPulse 4.4s ease-in-out infinite;
+    }
+
+    .icon-anim.float {
+      animation: floatIcon 3.6s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+
+    @keyframes spinPulse {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(-6deg) scale(1.06); }
+    }
+
+    @keyframes floatIcon {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    .badge-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 1fr;
+      margin-top: auto;
+    }
+
+    .badge {
+      display: grid;
+      gap: 2px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.26);
+      text-align: left;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      grid-template-columns: 30px 1fr;
+      column-gap: 10px;
+      align-items: center;
+    }
+
+    .badge:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow);
+    }
+
+    .badge strong {
+      font-size: 16px;
+    }
+
+    .badge span {
+      color: var(--text-soft);
+      font-size: 11px;
+    }
+
+    .badge .icon {
+      width: 26px;
+      height: 26px;
+      margin: 0;
+    }
+
+    .stat {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      text-align: center;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 22px;
+    }
+
+    .cta-panel {
+      display: grid;
+      gap: 18px;
+      justify-items: center;
+      text-align: center;
+      background: linear-gradient(140deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08));
+      border: 1px solid rgba(255, 255, 255, 0.32);
+      border-radius: 28px;
+      padding: 30px;
+      box-shadow: var(--shadow-strong);
+    }
+
+    .cta-panel .hero-actions {
+      justify-content: center;
+    }
+
+
+    .cta-panel {
+      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+
+    .cta-panel:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-strong);
+      border-color: rgba(255, 255, 255, 0.45);
+    }
+
+    .card,
+    .showcase-card,
+    .ambassador-card,
+    .cta-panel,
+    .badge,
+    .stat,
+    .metric,
+    .pill,
+    .step {
+      opacity: 0.96;
+      transform: translateY(0) scale(0.99);
+      filter: saturate(1.02);
+      transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease, opacity 0.35s ease, filter 0.35s ease;
+      will-change: transform;
+    }
+
+    .card:hover,
+    .showcase-card:hover,
+    .ambassador-card:hover,
+    .cta-panel:hover,
+    .badge:hover,
+    .stat:hover,
+    .metric:hover,
+    .pill:hover,
+    .step:hover {
+      opacity: 1;
+      transform: translateY(-8px) scale(1.01);
+      filter: saturate(1.08) brightness(1.03);
+      box-shadow: var(--shadow-strong);
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .footer {
+      margin-top: 80px;
+      padding: 28px 0 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
+      color: var(--text-soft);
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .reveal {
+      opacity: 1;
+      transform: none;
+      filter: blur(0);
+      transition: opacity 0.9s cubic-bezier(0.22, 0.61, 0.36, 1),
+        transform 0.9s cubic-bezier(0.22, 0.61, 0.36, 1),
+        filter 0.9s cubic-bezier(0.22, 0.61, 0.36, 1);
+      transition-delay: var(--delay, 0s);
+      will-change: opacity, transform, filter;
+    }
+
+    .js .reveal {
+      opacity: 0;
+      transform: translateY(28px) scale(0.98);
+      filter: blur(8px);
+    }
+
+    .reveal.is-visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .orb,
+      .bg-lines,
+      .ticker-track,
+      .icon-anim,
+      .cta::after,
+      .steps::before,
+      .step-number {
+        animation: none !important;
+      }
+
+      .reveal {
+        transition: none !important;
+        transform: none !important;
+        filter: none !important;
+        opacity: 1 !important;
+      }
+    }
+
+    @media (hover: none) {
+      .card,
+      .showcase-card,
+      .ambassador-card,
+      .cta-panel,
+      .badge,
+      .stat,
+      .metric,
+      .pill,
+      .step {
+        transform: none;
+        opacity: 1;
+        filter: none;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .header-inner {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .nav {
+        flex-wrap: wrap;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .ambassador-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .showcase-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 900px) {
+      .header-inner {
+        gap: 12px;
+      }
+
+      .header-cta {
+        display: none;
+      }
+
+      .nav {
+        position: fixed;
+        top: 78px;
+        left: 4vw;
+        right: 4vw;
+        flex-direction: column;
+        align-items: stretch;
+        padding: 16px;
+        background: linear-gradient(160deg, rgba(24, 117, 190, 0.96), rgba(42, 169, 238, 0.92));
+        border-radius: 20px;
+        box-shadow: var(--shadow-strong);
+        opacity: 0;
+        transform: translateY(-12px);
+        pointer-events: none;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+
+      .nav a {
+        padding: 12px 14px;
+        text-align: center;
+      }
+
+      .nav.is-open {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+
+      .menu-toggle {
+        display: inline-flex;
+        margin-left: auto;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .cta {
+        width: 100%;
+      }
+
+      .hero-actions {
+        width: 100%;
+      }
+
+      .ticker {
+        mask-image: none;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .showcase-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="bg-lines"></div>
+    <div class="orb one"></div>
+    <div class="orb two"></div>
+    <div class="orb three"></div>
+
+    <div class="site-header">
+      <header class="header-inner">
+        <div class="brand">
+          <div class="logo">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4.5 11.8L18.8 4.4C19.9 3.9 21 4.9 20.6 6.1L16.4 19.1C16.1 20.1 14.9 20.4 14.1 19.8L10.3 17.1L7.9 19.4C7.4 19.9 6.5 19.6 6.4 18.9L5.5 14.4L4.6 12.7C4.3 12.1 4.5 11.8 4.5 11.8Z" fill="#ffffff" opacity="0.9"/>
+            </svg>
+          </div>
+          <div>AI ТРЕНЕР</div>
+        </div>
+        <nav class="nav">
+          <a href="#product">О продукте</a>
+          <a href="#features">Возможности</a>
+          <a href="#how">Как работает</a>
+          <a href="#reviews">Отзывы</a>
+        </nav>
+        <button class="menu-toggle" type="button" aria-label="Открыть меню" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 7H20M4 12H20M4 17H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <a class="cta header-cta" href="https://t.me/sport_helper_robot" target="_blank" rel="noopener">
+          <span class="btn-icon">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M8 6L18 12L8 18V6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Попробовать AI‑тренера
+        </a>
+      </header>
+    </div>
+
+    <main class="container">
+
+      <section class="hero" id="product">
+        <div class="hero-center reveal" style="--delay: 0.1s;">
+          <span class="hero-badge">AI тренер · Бот + Mini App</span>
+          <h1>Твой личный AI‑тренер в Telegram<br><span class="hero-highlight">поддержка 24/7</span></h1>
+          <p>Превращаем хаотичные тренировки в систему: фиксируем прогресс, следим за питанием, даем персональные планы и мотивацию на основе твоих данных.</p>
+          <div class="hero-actions">
+            <a class="cta" href="https://t.me/sport_helper_robot" target="_blank" rel="noopener">
+              <span class="btn-icon">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M8 6L18 12L8 18V6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              Запустить тренера
+            </a>
+            <a class="cta secondary" href="https://t.me/sigidingo" target="_blank" rel="noopener">
+              <span class="btn-icon">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 3L14.6 8.4L20.5 9.2L16.2 13.2L17.4 19L12 16.1L6.6 19L7.8 13.2L3.5 9.2L9.4 8.4L12 3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              Стать партнером
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="proof">
+        <div class="section-head reveal" style="--delay: 0.1s;">
+          <h2>Почему это работает</h2>
+          <p>Помогаем новичкам не бросить тренировки: персонализация, данные и поддержка 24/7 формируют привычку.</p>
+        </div>
+        <div class="grid">
+          <div class="card reveal" style="--delay: 0.1s;">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 12.5L9.2 16.7L19 6.9" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h3>Без выгорания</h3>
+            <p>Новички удерживаются дольше уже в первый месяц.</p>
+          </div>
+          <div class="card reveal" style="--delay: 0.2s;">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="8" stroke="#ffffff" stroke-width="2" />
+                <path d="M12 8V12L15 14" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Поддержка 24/7</h3>
+            <p>AI всегда рядом и учитывает ваш контекст.</p>
+          </div>
+          <div class="card reveal" style="--delay: 0.3s;">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 7H18M6 12H18M6 17H12" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Персональные планы</h3>
+            <p>Ответы и планы приходят мгновенно прямо в чат.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="features">
+        <div class="section-head reveal" style="--delay: 0.1s;">
+          <h2>Возможности AI Тренера</h2>
+          <p>AI Тренер берет на себя ключевые задачи: планы, питание, мотивацию и фиксирование прогресса.</p>
+        </div>
+        <div class="grid">
+          <div class="card reveal" style="--delay: 0.1s;">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 12H20" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                <path d="M12 4V20" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Запись результатов</h3>
+            <p>Подходы, время, повторения и веса сохраняются в один клик.</p>
+          </div>
+          <div class="card reveal" style="--delay: 0.15s;">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 8H18M6 12H18M6 16H14" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Планы тренировок</h3>
+            <p>Дневные и недельные планы с персональными весами и подходами.</p>
+          </div>
+          <div class="card reveal" style="--delay: 0.2s;">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 7C8 4 16 4 19 7" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                <path d="M4 12H20" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                <path d="M6 17C9 20 15 20 18 17" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Питание</h3>
+            <p>Учитывает еду, время и количество — без ручной рутины.</p>
+          </div>
+          <div class="card reveal" style="--delay: 0.25s;">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 12C4 7.6 7.6 4 12 4C16.4 4 20 7.6 20 12" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                <path d="M20 12V20H12" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Распознавание голоса</h3>
+            <p>Голосовые превращаются в аккуратные записи и планы.</p>
+          </div>
+          <div class="card reveal" style="--delay: 0.3s;">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 14L9 9L13 13L20 6" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="20" cy="6" r="2" fill="#ffffff" />
+              </svg>
+            </div>
+            <h3>Мотивация</h3>
+            <p>Напоминания и поддержка 24/7, чтобы не бросать.</p>
+          </div>
+          <div class="card reveal" style="--delay: 0.35s;">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 6H20V16H4V6Z" stroke="#ffffff" stroke-width="2" />
+                <path d="M8 20H16" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Статистика</h3>
+            <p>Дни активности, серии и динамика прогресса в одном месте.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="how">
+        <div class="section-head reveal" style="--delay: 0.1s;">
+          <h2>Как работает приложение</h2>
+          <p>Путь пользователя от первого сообщения до понятного результата.</p>
+        </div>
+        <div class="steps">
+          <div class="step reveal" style="--delay: 0.1s;">
+            <div class="step-number">01</div>
+            <div>
+              <strong>Ты пишешь сообщение или отправляешь голосовое.</strong>
+              <div style="color: var(--text-soft);">Любой формат распознается и сохраняется.</div>
+            </div>
+          </div>
+          <div class="step reveal" style="--delay: 0.2s;">
+            <div class="step-number">02</div>
+            <div>
+              <strong>ИИ анализирует запрос.</strong>
+              <div style="color: var(--text-soft);">Тренировка, питание, вопрос по плану или мотивация.</div>
+            </div>
+          </div>
+          <div class="step reveal" style="--delay: 0.3s;">
+            <div class="step-number">03</div>
+            <div>
+              <strong>ИИ учитывает твой контекст и историю.</strong>
+              <div style="color: var(--text-soft);">Обращается к дневнику и предыдущим результатам.</div>
+            </div>
+          </div>
+          <div class="step reveal" style="--delay: 0.4s;">
+            <div class="step-number">04</div>
+            <div>
+              <strong>Результат за секунды.</strong>
+              <div style="color: var(--text-soft);">План, запись или калораж — все сразу сохраняется.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section reveal" style="--delay: 0.1s;">
+        <div class="section-head">
+          <h2>Как выглядит AI Тренер</h2>
+          <p>Интерфейс сочетает чат‑бота и мини‑приложение со статистикой прогресса.</p>
+        </div>
+        <div class="showcase-grid">
+          <div class="showcase-card">
+            <div class="icon-anim spin">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 6H20V16H4V6Z" stroke="#ffffff" stroke-width="2" />
+                <path d="M8 20H16" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <h3 style="font-size: 22px;">Mini App</h3>
+              <p style="color: var(--text-soft); margin: 4px 0 0; font-size: 14px;">Прогресс, планы и метрики наглядно в телефоне.</p>
+            </div>
+            <div class="badge-grid">
+              <div class="badge">
+                <span class="icon">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 15L9 10L13 14L20 7" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="20" cy="7" r="2" fill="#ffffff" />
+                  </svg>
+                </span>
+                <div>
+                  <strong>Прогресс</strong>
+                  <span>история</span>
+                </div>
+              </div>
+              <div class="badge">
+                <span class="icon">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M6 8H18M6 12H18M6 16H14" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </span>
+                <div>
+                  <strong>Планы</strong>
+                  <span>на неделю</span>
+                </div>
+              </div>
+              <div class="badge">
+                <span class="icon">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M5 7C8 4 16 4 19 7" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M4 12H20" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M6 17C9 20 15 20 18 17" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </span>
+                <div>
+                  <strong>Питание</strong>
+                  <span>учет</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="showcase-card">
+            <div class="icon-anim float">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 7H18M6 12H18M6 17H12" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <h3 style="font-size: 22px;">Чат-бот</h3>
+              <p style="color: var(--text-soft); margin: 4px 0 0; font-size: 14px;">Ответы, мотивация и сопровождение 24/7 в Telegram.</p>
+            </div>
+            <div class="badge-grid">
+              <div class="badge">
+                <span class="icon">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="8" stroke="#ffffff" stroke-width="2" />
+                    <path d="M12 8V12L15 14" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </span>
+                <div>
+                  <strong>24/7</strong>
+                  <span>ответы</span>
+                </div>
+              </div>
+              <div class="badge">
+                <span class="icon">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 4V20" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M4 12H20" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </span>
+                <div>
+                  <strong>AI</strong>
+                  <span>поддержка</span>
+                </div>
+              </div>
+              <div class="badge">
+                <span class="icon">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M6 7H18M6 12H18M6 17H12" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </span>
+                <div>
+                  <strong>Данные</strong>
+                  <span>контекст</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="showcase-card">
+            <div class="icon-anim">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 15L9 10L13 14L20 7" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="20" cy="7" r="2" fill="#ffffff" />
+              </svg>
+            </div>
+            <div>
+              <h3 style="font-size: 22px;">Статистика</h3>
+              <p style="color: var(--text-soft); margin: 4px 0 0; font-size: 14px;">Достижения, серии тренировок и стабильность прогресса.</p>
+            </div>
+            <div class="badge-grid">
+              <div class="badge">
+                <span class="icon">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 12H20" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M8 8H16" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M8 16H16" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </span>
+                <div>
+                  <strong>Дни</strong>
+                  <span>активности</span>
+                </div>
+              </div>
+              <div class="badge">
+                <span class="icon">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 15L9 10L13 14L20 7" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="20" cy="7" r="2" fill="#ffffff" />
+                  </svg>
+                </span>
+                <div>
+                  <strong>Режим</strong>
+                  <span>серии</span>
+                </div>
+              </div>
+              <div class="badge">
+                <span class="icon">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 3L14.6 8.4L20.5 9.2L16.2 13.2L17.4 19L12 16.1L6.6 19L7.8 13.2L3.5 9.2L9.4 8.4L12 3Z" stroke="#ffffff" stroke-width="2" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+                <div>
+                  <strong>Цели</strong>
+                  <span>рост</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="reviews">
+        <div class="section-head reveal" style="--delay: 0.1s;">
+          <h2>Отзывы пользователей и тренеров</h2>
+          <p>Настоящие истории и результаты — без воды и маркетингового шума.</p>
+        </div>
+        <div class="grid">
+          <div class="card reveal" style="--delay: 0.1s;">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 8H18M6 12H14M6 16H10" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Иван, 28 лет</h3>
+            <p>«Раньше бросал на 2-й неделе. С AI Тренером держусь уже 3 месяца — всё удобно и вовремя.»</p>
+          </div>
+          <div class="card reveal" style="--delay: 0.2s;">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 12H20" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                <path d="M12 4V20" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Мария, тренер</h3>
+            <p>«Подключила 6 клиентов: бот снимает рутину, а я получаю стабильный доход.»</p>
+          </div>
+          <div class="card reveal" style="--delay: 0.3s;">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 15L9 10L13 14L20 7" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="20" cy="7" r="2" fill="#ffffff" />
+              </svg>
+            </div>
+            <h3>Алексей, 34 года</h3>
+            <p>«План, питание и отчеты в одном месте. Больше не трачу время на таблицы.»</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section reveal" style="--delay: 0.1s;">
+        <div class="cta-panel">
+          <div>
+            <h3 style="margin-bottom:6px;">Готовы присоединиться?</h3>
+            <div style="color: var(--text-soft);">Оставьте заявку — и мы подключим вас всего за 24 часа.</div>
+          </div>
+          <div class="hero-actions">
+            <a class="cta" href="https://t.me/sigidingo" target="_blank" rel="noopener">
+              <span class="btn-icon">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 12L10 17L19 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              Оставить заявку
+            </a>
+            <a class="cta secondary" href="https://t.me/sigidingo" target="_blank" rel="noopener">
+              <span class="btn-icon">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 4V14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M8 10L12 14L16 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M5 18H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </span>
+              Скачать PDF-презентацию
+            </a>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <footer class="footer reveal" style="--delay: 0.1s;">
+    <div>© 2026 AI ТРЕНЕР. Все права защищены.</div>
+    <div>Реферальная программа · Telegram · @sigidingo</div>
+  </footer>
+
+  <script>
+    const nav = document.querySelector('.nav');
+    const menuToggle = document.querySelector('.menu-toggle');
+    const header = document.querySelector('.site-header');
+
+    const syncNavOffset = () => {
+      if (!nav || !header || !window.matchMedia) return;
+      if (window.matchMedia('(max-width: 900px)').matches) {
+        nav.style.top = `${header.offsetHeight + 8}px`;
+      } else {
+        nav.style.top = '';
+      }
+    };
+
+    if (menuToggle && nav) {
+      menuToggle.addEventListener('click', () => {
+        const isOpen = nav.classList.toggle('is-open');
+        menuToggle.setAttribute('aria-expanded', String(isOpen));
+      });
+
+      nav.querySelectorAll('a').forEach((link) => {
+        link.addEventListener('click', () => {
+          nav.classList.remove('is-open');
+          menuToggle.setAttribute('aria-expanded', 'false');
+        });
+      });
+    }
+
+    syncNavOffset();
+    window.addEventListener('resize', syncNavOffset);
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.2 });
+
+    document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+  </script>
+</body>
+</html>

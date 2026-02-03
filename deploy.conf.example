@@ -1,0 +1,35 @@
+# Конфигурация для автоматического деплоя на TimeWeb
+# Скопируйте этот файл в deploy.conf и заполните своими данными
+
+# Параметры SSH подключения
+SERVER_HOST="your-server.timeweb.ru"
+SERVER_USER="username"
+SERVER_PATH="/home/username/ai_trainer_cursor"
+
+# Дополнительные опции SSH (порт, ключ и т.д.)
+# Пример: SSH_OPTS="-p 2222 -i ~/.ssh/id_rsa"
+SSH_OPTS=""
+
+# Устанавливать ли зависимости при деплое
+INSTALL_DEPS="true"
+
+# Команда для перезапуска бота
+# Варианты в зависимости от способа запуска:
+
+# Если используете systemd:
+# RESTART_COMMAND="sudo systemctl restart ai_trainer_bot"
+
+# Если используете supervisor:
+# RESTART_COMMAND="sudo supervisorctl restart ai_trainer_bot"
+
+# Если используете pm2:
+# RESTART_COMMAND="pm2 restart ai_trainer_bot"
+
+# Если используете Docker:
+# RESTART_COMMAND="cd $SERVER_PATH && docker-compose restart"
+
+# Если просто запускаете в screen/tmux (нужно убить старый процесс и запустить новый):
+# RESTART_COMMAND="pkill -f 'python.*bot.py' && cd $SERVER_PATH && nohup python3 bot.py > bot.log 2>&1 &"
+
+# Если используете простой скрипт запуска:
+RESTART_COMMAND="cd $SERVER_PATH && ./restart.sh"

@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    container_name: tg-miniapp-bot-1
+    restart: unless-stopped
+    working_dir: /app
+    env_file:
+      - .env
+    volumes:
+      # Bind mount: код на хосте монтируется в контейнер
+      - ./:/app
+    command: python bot.py

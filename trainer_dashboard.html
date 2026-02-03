@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Кабинет тренера</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="trainer_dashboard.css?v=2">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div>
+          <div class="eyebrow">Личный кабинет</div>
+          <h1 id="trainerNameTitle">Тренер</h1>
+        </div>
+        <div class="trainer-id" id="trainerIdBadge">ID: —</div>
+      </div>
+      <div class="sidebar-actions">
+        <button class="ghost-btn" id="logoutBtn" type="button">Выйти</button>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-title">Привязанные пользователи</div>
+        <div id="clientsList" class="clients-list"></div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-title">Промокоды тренера</div>
+        <div id="promoList" class="promo-list">—</div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="content-header">
+        <div class="client-title">
+          <div class="eyebrow">Пользователь</div>
+          <h2 id="clientName">Выбери пользователя слева</h2>
+        </div>
+        <div class="client-meta" id="clientMeta">—</div>
+      </header>
+
+      <section class="cards">
+        <div class="card">
+          <div class="card-title">Статус подписки</div>
+          <div class="stats-grid" id="paymentStats">
+            <div class="stat">
+              <div class="stat-label">Всего оплат</div>
+              <div class="stat-value" id="paidCount">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Сумма оплат</div>
+              <div class="stat-value" id="paidTotal">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Осталось дней</div>
+              <div class="stat-value" id="daysLeft">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Последняя оплата</div>
+              <div class="stat-value" id="lastPaid">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Активность</div>
+          <div class="activity" id="activityBlock">
+            <div class="activity-count">Тренировок: <strong id="workoutCount">—</strong></div>
+            <div class="activity-days" id="workoutDays">—</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="plan-editor">
+        <div class="plan-header">
+          <div>
+            <div class="eyebrow">План</div>
+            <h3>Редактирование плана</h3>
+          </div>
+          <div class="date-picker">
+            <label for="planDate">Дата</label>
+            <input id="planDate" type="date">
+          </div>
+        </div>
+        <div class="date-strip">
+          <button class="date-nav" id="datePrev" type="button">‹</button>
+          <div class="date-track" id="dateTrack"></div>
+          <button class="date-nav" id="dateNext" type="button">›</button>
+        </div>
+
+        <div class="plan-grid">
+          <div class="plan-card">
+            <div class="plan-card-title">Питание</div>
+            <textarea id="mealsPlan" placeholder="Заполни план питания на выбранную дату..."></textarea>
+            <button id="saveMealsBtn" class="save-btn">Сохранить питание</button>
+          </div>
+
+          <div class="plan-card">
+            <div class="plan-card-title">Тренировки</div>
+            <textarea id="workoutsPlan" placeholder="Заполни план тренировок на выбранную дату..."></textarea>
+            <button id="saveWorkoutsBtn" class="save-btn">Сохранить тренировки</button>
+          </div>
+        </div>
+        <div class="status" id="saveStatus">—</div>
+      </section>
+    </main>
+  </div>
+
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+      <div class="eyebrow">Вход тренера</div>
+      <h2>Личный кабинет</h2>
+      <p class="login-subtitle">Введи логин и пароль, чтобы управлять планами клиентов.</p>
+      <input id="loginInput" type="text" placeholder="Логин">
+      <input id="passwordInput" type="password" placeholder="Пароль">
+      <button id="loginBtn">Войти</button>
+      <div class="login-status" id="loginStatus">—</div>
+    </div>
+  </div>
+
+  <script src="trainer_dashboard.js?v=2"></script>
+</body>
+</html>

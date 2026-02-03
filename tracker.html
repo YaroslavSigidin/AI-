@@ -1,0 +1,1025 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Tracker</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="/tracker.css?v=114" />
+  <link rel="stylesheet" href="mode-bar.css">
+  <style>
+    /* ЭКСТРЕННОЕ СКРЫТИЕ БЛОКА БЫСТРЫХ ШАБЛОНОВ */
+    .quick-templates, #quickTemplates, [class*="quick-template"], [id*="quickTemplate"] {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      height: 0 !important;
+      max-height: 0 !important;
+      overflow: hidden !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      position: absolute !important;
+      left: -9999px !important;
+      top: -9999px !important;
+      width: 0 !important;
+      pointer-events: none !important;
+    }
+    .quick-templates *, #quickTemplates * { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="consent-overlay" id="consentOverlay" style="display: none;">
+      <div class="consent-card">
+        <h3>Согласие на обработку данных</h3>
+        <p>Для использования приложения нужно принять условия и политику конфиденциальности.</p>
+        <label class="consent-check">
+          <input type="checkbox" id="consentCheckbox">
+          <span>Я согласен с условиями и политикой конфиденциальности</span>
+        </label>
+        <div class="consent-links">
+          <a href="privacy_policy.html" target="_blank" rel="noopener">Политика конфиденциальности</a>
+          <a href="terms.html" target="_blank" rel="noopener">Пользовательское соглашение</a>
+          <a href="offer.html" target="_blank" rel="noopener">Публичная оферта</a>
+          <a href="consent.html" target="_blank" rel="noopener">Согласие</a>
+        </div>
+        <button class="consent-btn" id="consentAcceptBtn" disabled>Принять</button>
+      </div>
+    </div>
+    <!-- Страница: Сегодня -->
+    <div class="page" id="pageToday" data-page="today">
+      <div class="workout-plan-section" id="workoutPlanSection">
+      <div class="workout-plan-header">
+        <div class="workout-plan-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20.57 14.86L22 13.43L20.57 12L17 15.57L8.43 7L12 3.43L10.57 2L9.14 3.43L7.71 2L5.57 4.14L4.14 2.71L2.71 4.14L4.14 5.57L2 7.71L3.43 9.14L7 5.57L15.57 14L12 17.57L13.43 19L14.86 17.57L16.29 19L18.43 16.86L19.86 18.29L21.29 16.86L19.86 15.43L22 13.29L20.57 14.86Z" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="workout-plan-title-block">
+          <span class="workout-plan-title">Упражнения на сегодня</span>
+          <div class="workout-plan-progress" id="workoutPlanProgress" style="display: none;">
+            <div class="workout-progress-bar">
+              <div class="workout-progress-fill" id="workoutProgressFill"></div>
+            </div>
+            <span class="workout-progress-text" id="workoutProgressText">0/0</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Карточка достижений дня -->
+      <div class="daily-achievements-card" id="dailyAchievementsCard" style="display: none;">
+        <div class="daily-achievements-header">
+          <div class="daily-achievements-icon">🎯</div>
+          <div class="daily-achievements-title">Достижения дня</div>
+        </div>
+        <div class="daily-achievements-content">
+          <div class="daily-achievement-item" id="dailyAchievementExercises">
+            <span class="achievement-icon">💪</span>
+            <span class="achievement-text">Упражнений выполнено: <strong id="dailyExercisesCount">0</strong></span>
+          </div>
+          <div class="daily-achievement-item" id="dailyAchievementSets">
+            <span class="achievement-icon">✅</span>
+            <span class="achievement-text">Подходов завершено: <strong id="dailySetsCount">0</strong></span>
+          </div>
+          <div class="daily-achievement-item" id="dailyAchievementStreak">
+            <span class="achievement-icon">🔥</span>
+            <span class="achievement-text">Дней подряд: <strong id="dailyStreakCount">0</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="workout-plan-content" id="workoutPlanContent">
+        <div class="workout-plan-loading" id="workoutPlanLoading" style="display: none;">
+          <div class="skeleton-line long"></div>
+          <div class="skeleton-line medium"></div>
+          <div class="skeleton-line short"></div>
+        </div>
+        <div class="workout-plan-exercises" id="workoutPlanExercises" style="display: none;"></div>
+        <div class="workout-plan-empty" id="workoutPlanEmpty" style="display: none;">
+          <div class="empty-animation">
+            <div class="empty-pulse"></div>
+            <div class="empty-icon">💪</div>
+          </div>
+          <div class="empty-hint">Здесь будут отображаться твои упражнения. Ты можешь попросить ИИ тренера в чате составить тебе план тренировок или записать его самостоятельно на странице "План"</div>
+          <div class="empty-action" id="emptyActionBtn" role="button" tabindex="0">Написать план</div>
+        </div>
+      </div>
+      <div class="workout-plan-actions">
+        <button class="workout-plan-transfer-btn" id="transferResultsBtn" title="Перенести результаты в дневник" aria-label="Перенести результаты тренировки" tabindex="0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19 12v7H5v-7M12 3v9m0 0l-3-3m3 3l3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="workout-plan-transfer-text">В дневник</span>
+        </button>
+        <button class="workout-plan-refresh-btn" id="refreshWorkoutPlanBtn" title="Обновить список упражнений" aria-label="Обновить план тренировок" tabindex="0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4C7.58 4 4 7.58 4 12C4 16.42 7.58 20 12 20C15.73 20 18.84 17.45 19.73 14H17.65C16.83 16.33 14.61 18 12 18C8.69 18 6 15.31 6 12C6 8.69 8.69 6 12 6C13.66 6 15.14 6.69 16.22 7.78L13 11H20V4L17.65 6.35Z" fill="currentColor"/>
+          </svg>
+          <span class="workout-plan-transfer-text">Обновить</span>
+        </button>
+      </div>
+
+      <!-- Мотивационная цитата -->
+      <div class="motivational-quote-card" id="motivationalQuoteCard">
+        <div class="quote-content" id="motivationalQuote">Загрузка...</div>
+        <div class="quote-author" id="motivationalAuthor"></div>
+      </div>
+    </div>
+    </div>
+
+    <!-- Страница: План -->
+    <div class="page" id="pagePlan" data-page="plan" style="display: none;">
+      <div class="top">
+      <button class="nav" id="prevWeek">‹</button>
+      <div class="title">
+        <div class="month" id="monthTitle">—</div>
+        <div class="range" id="weekRange">—</div>
+      </div>
+      <button class="nav" id="nextWeek">›</button>
+    </div>
+
+    <div class="days" id="days"></div>
+
+      <div class="tabs" role="tablist" aria-label="Выбор типа данных">
+        <button class="tab" data-kind="workouts" id="tab_workouts_plan" role="tab" aria-selected="true" aria-controls="noteCardPlan" tabindex="0">
+          <span>Тренировки</span>
+        </button>
+        <button class="tab" data-kind="meals" id="tab_meals_plan" role="tab" aria-selected="false" aria-controls="noteCardPlan" tabindex="0">
+          <span>Питание</span>
+        </button>
+      </div>
+      <div class="card" id="noteCardPlan" role="tabpanel" aria-labelledby="tab_workouts_plan">
+        <div class="card-header">
+          <div class="hint" id="hintPlan" aria-live="polite"></div>
+        </div>
+        <div id="notePlan" class="note-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-label="План тренировок" data-placeholder="Начни записывать свой план тренировок здесь... 💪" spellcheck="false" tabindex="0"></div>
+        <div class="plan-actions">
+          <button class="plan-action-btn" id="copyPlanBtn" type="button">
+            <svg class="plan-action-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 8H6C4.9 8 4 8.9 4 10V18C4 19.1 4.9 20 6 20H14C15.1 20 16 19.1 16 18V16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M18 4H10C8.9 4 8 4.9 8 6V14C8 15.1 8.9 16 10 16H18C19.1 16 20 15.1 20 14V6C20 4.9 19.1 4 18 4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Скопировать</span>
+          </button>
+          <button class="plan-action-btn danger" id="clearPlanBtn" type="button">
+            <svg class="plan-action-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 6H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M8 6V4C8 3.45 8.45 3 9 3H15C15.55 3 16 3.45 16 4V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M19 6L18 20C17.95 20.55 17.55 21 17 21H7C6.45 21 6.05 20.55 6 20L5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M10 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M14 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Очистить</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Страница: Результаты -->
+    <div class="page" id="pageResults" data-page="results" style="display: none;">
+      <div class="top">
+        <button class="nav" id="prevWeekResults">‹</button>
+        <div class="title">
+          <div class="month" id="monthTitleResults">—</div>
+          <div class="range" id="weekRangeResults">—</div>
+        </div>
+        <button class="nav" id="nextWeekResults">›</button>
+      </div>
+      <div class="days" id="daysResults"></div>
+      <div class="tabs">
+        <button class="tab" data-kind="workouts" id="tab_workouts_page">
+          <span>Тренировки</span>
+        </button>
+        <button class="tab" data-kind="meals" id="tab_meals_page">
+          <span>Питание</span>
+        </button>
+      </div>
+      <div class="card" id="noteCardResults">
+        <div class="card-header">
+          <div class="hint" id="hintResults"></div>
+          <button class="generate-btn-small" id="saveResultsBtn" style="display: none;">
+            <svg class="generate-icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 12v7H5v-7M12 3v9m0 0l-3-3m3 3l3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="generate-btn-text">Зафиксировать результаты</span>
+          </button>
+        </div>
+        <textarea id="noteResults" placeholder="Запиши результаты тренировки или питания здесь... ✍️" spellcheck="false"></textarea>
+        <div class="textarea-wrapper" style="display: none;">
+          <div class="save-indicator" id="saveIndicator" style="display: none;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Сохранено</span>
+          </div>
+        </div>
+        <div class="plan-actions">
+          <button class="plan-action-btn" id="copyResultsBtn" type="button">
+            <svg class="plan-action-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 8H6C4.9 8 4 8.9 4 10V18C4 19.1 4.9 20 6 20H14C15.1 20 16 19.1 16 18V16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M18 4H10C8.9 4 8 4.9 8 6V14C8 15.1 8.9 16 10 16H18C19.1 16 20 15.1 20 14V6C20 4.9 19.1 4 18 4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Скопировать</span>
+          </button>
+          <button class="plan-action-btn danger" id="clearResultsBtn" type="button">
+            <svg class="plan-action-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 6H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M8 6V4C8 3.45 8.45 3 9 3H15C15.55 3 16 3.45 16 4V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M19 6L18 20C17.95 20.55 17.55 21 17 21H7C6.45 21 6.05 20.55 6 20L5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M10 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M14 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Очистить</span>
+          </button>
+        </div>
+      </div>
+      <div class="card measurements-card" id="measurementsCard">
+        <div class="card-header">
+          <div class="hint">Измерения тела</div>
+          <button class="generate-btn-small" id="saveMeasurementsBtn" type="button">
+            <svg class="generate-icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="generate-btn-text">Сохранить замеры</span>
+          </button>
+        </div>
+        <div class="measurements-content">
+          <div class="measurements-grid">
+            <div class="profile-field measurement-field">
+              <label class="profile-label">Талия (см)</label>
+              <div class="measurement-input-row">
+                <input type="number" class="profile-input measurement-input" id="measureWaist" data-measurement-key="waist_cm" placeholder="75" min="30" max="200" step="0.1">
+                <span class="measurement-delta" data-measurement-key="waist_cm">—</span>
+              </div>
+            </div>
+            <div class="profile-field measurement-field">
+              <label class="profile-label">Бёдра (см)</label>
+              <div class="measurement-input-row">
+                <input type="number" class="profile-input measurement-input" id="measureHips" data-measurement-key="hips_cm" placeholder="95" min="40" max="220" step="0.1">
+                <span class="measurement-delta" data-measurement-key="hips_cm">—</span>
+              </div>
+            </div>
+            <div class="profile-field measurement-field">
+              <label class="profile-label">Грудь (см)</label>
+              <div class="measurement-input-row">
+                <input type="number" class="profile-input measurement-input" id="measureChest" data-measurement-key="chest_cm" placeholder="95" min="40" max="200" step="0.1">
+                <span class="measurement-delta" data-measurement-key="chest_cm">—</span>
+              </div>
+            </div>
+            <div class="profile-field measurement-field">
+              <label class="profile-label">Плечи (см)</label>
+              <div class="measurement-input-row">
+                <input type="number" class="profile-input measurement-input" id="measureShoulders" data-measurement-key="shoulders_cm" placeholder="110" min="50" max="200" step="0.1">
+                <span class="measurement-delta" data-measurement-key="shoulders_cm">—</span>
+              </div>
+            </div>
+            <div class="profile-field measurement-field">
+              <label class="profile-label">Бицепс (см)</label>
+              <div class="measurement-input-row">
+                <input type="number" class="profile-input measurement-input" id="measureBiceps" data-measurement-key="biceps_cm" placeholder="32" min="15" max="80" step="0.1">
+                <span class="measurement-delta" data-measurement-key="biceps_cm">—</span>
+              </div>
+            </div>
+            <div class="profile-field measurement-field">
+              <label class="profile-label">Ягодицы (см)</label>
+              <div class="measurement-input-row">
+                <input type="number" class="profile-input measurement-input" id="measureGlutes" data-measurement-key="glutes_cm" placeholder="95" min="40" max="220" step="0.1">
+                <span class="measurement-delta" data-measurement-key="glutes_cm">—</span>
+              </div>
+            </div>
+          </div>
+          <div class="measurements-history">
+            <button class="measurements-history-toggle" id="measurementsHistoryToggle" type="button">
+              <span>История замеров</span>
+              <svg class="measurements-history-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <div class="measurements-history-list" id="measurementsHistoryList" style="display: none;"></div>
+          </div>
+          <div class="measurement-status" id="measurementStatus" style="display: none;">
+            <div class="status-icon">✓</div>
+            <div class="status-text">Замеры сохранены</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Страница: Статистика -->
+    <div class="page" id="pageStats" data-page="stats" style="display: none;">
+      <!-- Маскот и система мотивации -->
+      <div class="mascot-section" id="mascotSection">
+        <div class="mascot-container">
+          <div class="mascot-character" id="mascotCharacter">
+            <div class="mascot-tooltip" tabindex="0" aria-label="Информация о маскоте">
+              i
+              <div class="mascot-tooltip-content">
+                Это твой маскот-наставник. Он отслеживает активность, меняет яркость и напоминает,
+                когда нужно добавить движения, чтобы поддерживать мотивацию.
+              </div>
+            </div>
+            <!-- Интерактивная капля/круг -->
+            <div class="mascot-drop">
+              <div class="mascot-drop-core">
+                <div class="mascot-drop-shine"></div>
+                <div class="mascot-drop-pattern"></div>
+              </div>
+              <div class="mascot-drop-ripple"></div>
+              <div class="mascot-drop-ripple delay-1"></div>
+              <div class="mascot-drop-ripple delay-2"></div>
+            </div>
+          </div>
+          <div class="mascot-speech-bubble" id="mascotSpeechBubble">
+            <div class="speech-bubble-content" id="mascotMessage">
+              Привет! Давай посмотрим на твою статистику! 💪
+            </div>
+            <div class="speech-bubble-tail"></div>
+          </div>
+        </div>
+        
+        <!-- Система достижений -->
+        <div class="achievements-section" id="achievementsSection">
+          <div class="achievements-header">
+            <span class="achievements-title">🏆 Достижения</span>
+            <span class="achievements-count" id="achievementsCount">0/10</span>
+          </div>
+          <div class="achievements-grid" id="achievementsGrid">
+            <!-- Достижения будут добавлены через JavaScript -->
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-section" id="statsSection">
+        
+        <!-- Фильтры по периодам -->
+        <div class="stats-period-filters" id="statsPeriodFilters">
+          <button class="period-filter-btn active" data-days="30" aria-label="30 дней" tabindex="0">
+            <span>30 дней</span>
+          </button>
+          <button class="period-filter-btn" data-days="7" aria-label="7 дней" tabindex="0">
+            <span>7 дней</span>
+          </button>
+          <button class="period-filter-btn" data-days="90" aria-label="90 дней" tabindex="0">
+            <span>90 дней</span>
+          </button>
+          <button class="period-filter-btn" data-days="365" aria-label="Год" tabindex="0">
+            <span>Год</span>
+          </button>
+        </div>
+
+        <div class="stats-loading" id="statsLoading" style="display: none;">
+          <div class="stats-loading-spinner"></div>
+          <div class="stats-loading-text">Загрузка статистики...</div>
+        </div>
+        <div class="stats-content" id="statsContent" style="display: none;">
+        
+        <!-- Метрики В ударе (в стиле референса) -->
+        <div class="stats-metrics-modern">
+          <div class="metric-modern-card">
+            <div class="metric-modern-icon streak-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z" fill="currentColor"/>
+              </svg>
+            </div>
+            <div class="metric-modern-content">
+              <div class="metric-modern-label">Текущая серия</div>
+              <div class="metric-modern-value-wrapper">
+                <span class="metric-modern-value" id="currentStreak">0</span>
+                <span class="metric-modern-unit-inline" id="currentStreakUnit">дня</span>
+              </div>
+            </div>
+            <div class="metric-modern-circle">
+              <svg class="metric-circle-svg" viewBox="0 0 60 60">
+                <circle class="metric-circle-bg" cx="30" cy="30" r="26"></circle>
+                <circle class="metric-circle-progress streak-progress" cx="30" cy="30" r="26" id="currentStreakCircle"></circle>
+              </svg>
+            </div>
+          </div>
+          
+          <div class="metric-modern-card">
+            <div class="metric-modern-icon max-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
+              </svg>
+            </div>
+            <div class="metric-modern-content">
+              <div class="metric-modern-label">Максимальная серия</div>
+              <div class="metric-modern-value-wrapper">
+                <span class="metric-modern-value" id="maxStreak">0</span>
+                <span class="metric-modern-unit-inline" id="maxStreakUnit">дня</span>
+              </div>
+            </div>
+            <div class="metric-modern-circle">
+              <svg class="metric-circle-svg" viewBox="0 0 60 60">
+                <circle class="metric-circle-bg" cx="30" cy="30" r="26"></circle>
+                <circle class="metric-circle-progress max-progress" cx="30" cy="30" r="26" id="maxStreakCircle"></circle>
+              </svg>
+            </div>
+          </div>
+          
+          <div class="metric-modern-card">
+            <div class="metric-modern-icon total-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z" fill="currentColor"/>
+              </svg>
+            </div>
+            <div class="metric-modern-content">
+              <div class="metric-modern-label">Всего тренировок</div>
+              <div class="metric-modern-value-wrapper">
+                <span class="metric-modern-value" id="totalWorkouts">0</span>
+                <span class="metric-modern-unit-inline" id="totalWorkoutsUnit">тренировок</span>
+              </div>
+            </div>
+            <div class="metric-modern-circle">
+              <svg class="metric-circle-svg" viewBox="0 0 60 60">
+                <circle class="metric-circle-bg" cx="30" cy="30" r="26"></circle>
+                <circle class="metric-circle-progress total-progress" cx="30" cy="30" r="26" id="totalWorkoutsCircle"></circle>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Объединенный блок статистики с графиком -->
+        <div class="metric-comparison-card unified">
+          <div class="metric-comparison-header">
+            <div class="metric-comparison-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 3V21H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M7 16L12 11L16 15L21 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M21 10V3H14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <span class="metric-comparison-title">Активность</span>
+          </div>
+          
+          <div class="unified-metrics">
+            <div class="unified-metric-item">
+              <div class="unified-metric-label">Процент активности</div>
+              <div class="unified-metric-values">
+                <div class="unified-metric-value current">
+                  <div class="metric-dot current-dot"></div>
+                  <span id="currentPercentage">0%</span>
+                  <span class="metric-context"> из 100%</span>
+                </div>
+              </div>
+            </div>
+            <div class="unified-metric-item">
+              <div class="unified-metric-label">Тренировок в неделю</div>
+              <div class="unified-metric-values">
+                <div class="unified-metric-value current">
+                  <div class="metric-dot current-dot"></div>
+                  <span id="currentAvg">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="unified-chart-container">
+            <div class="unified-chart" id="unifiedChart"></div>
+          </div>
+        </div>
+
+        
+
+        <!-- График активности (календарь в стиле референса) -->
+        <div class="chart-container">
+          <div class="metric-comparison-header" style="margin-bottom: 16px;">
+            <div class="metric-comparison-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z" fill="currentColor"/>
+              </svg>
+            </div>
+            <span class="metric-comparison-title">Ударный режим</span>
+          </div>
+          <div class="calendar-classic-wrapper">
+            <div class="calendar-classic-header">
+              <button class="calendar-nav-btn" id="calendarPrevMonth">‹</button>
+              <div class="calendar-month-year" id="calendarMonthYear">Февраль 2022</div>
+              <button class="calendar-nav-btn" id="calendarNextMonth">›</button>
+            </div>
+            <div class="calendar-weekdays">
+              <span>Пн</span>
+              <span>Вт</span>
+              <span>Ср</span>
+              <span>Чт</span>
+              <span>Пт</span>
+              <span>Сб</span>
+              <span>Вс</span>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item">
+              <span class="legend-box" style="background: rgba(90,162,255,0.4);"></span>
+              <span>Тренировка</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-box" style="background: rgba(255,255,255,0.05);"></span>
+              <span>Нет тренировки</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Статистика по дням недели -->
+        <div class="weekdays-stats">
+          <div class="metric-comparison-header" style="margin-bottom: 16px;">
+            <div class="metric-comparison-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 13H8V3H3V13ZM3 21H8V15H3V21ZM10 21H15V11H10V21ZM10 13H15V3H10V13ZM17 21H22V15H17V21ZM17 13H22V3H17V13Z" fill="currentColor"/>
+              </svg>
+            </div>
+            <span class="metric-comparison-title">Активность по дням недели</span>
+          </div>
+          <div class="weekdays-chart" id="weekdaysChart"></div>
+        </div>
+
+        <!-- Сравнение периодов -->
+        <div class="period-comparison">
+          <div class="metric-comparison-header" style="margin-bottom: 16px;">
+            <div class="metric-comparison-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
+              </svg>
+            </div>
+            <span class="metric-comparison-title">Сравнение с предыдущим периодом</span>
+          </div>
+          <div id="periodComparison"></div>
+        </div>
+
+        </div>
+      </div>
+      <div class="stats-error" id="statsError" style="display: none;"></div>
+    </div>
+
+    <!-- Страница: Калькулятор -->
+    <div class="page" id="pageCalculator" data-page="calculator">
+      <!-- Калькулятор БЖУ -->
+      <div class="settings-section" id="bjuCalculatorSection">
+        <div class="settings-header">
+          <div class="settings-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V5H19V19ZM17 12H7V10H17V12ZM15 16H7V14H15V16ZM17 8H7V6H17V8Z" fill="currentColor"/>
+              <path d="M12 4L9 7H11V12H13V7H15L12 4Z" fill="currentColor"/>
+            </svg>
+          </div>
+          <span class="settings-title">Калькулятор БЖУ</span>
+        </div>
+        
+        <div class="settings-content">
+          <div class="settings-description">
+            Рассчитай свою суточную норму белков, жиров и углеводов на основе твоих параметров
+          </div>
+          
+          <div class="bju-calculator-form">
+            <!-- Поля для ввода параметров -->
+            <div class="bju-field-group">
+              <label class="bju-label">Рост (см)</label>
+              <div class="bju-weight-control">
+                <input type="range" class="bju-range" id="calcHeightRange" min="100" max="250" step="1" value="175" aria-label="Рост">
+                <div class="bju-range-meta">
+                  <button class="bju-stepper" data-target="calcHeight" data-step="-1" aria-label="Уменьшить рост">−</button>
+                  <input type="number" class="bju-input bju-input-compact" id="calcHeight" placeholder="175" min="100" max="250" step="1">
+                  <button class="bju-stepper" data-target="calcHeight" data-step="1" aria-label="Увеличить рост">+</button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bju-field-group">
+              <label class="bju-label">Вес (кг)</label>
+              <div class="bju-weight-control">
+                <input type="range" class="bju-range" id="calcWeightRange" min="30" max="200" step="0.1" value="70" aria-label="Вес">
+                <div class="bju-range-meta">
+                  <button class="bju-stepper" data-target="calcWeight" data-step="-0.1" aria-label="Уменьшить вес">−</button>
+                  <input type="number" class="bju-input bju-input-compact" id="calcWeight" placeholder="70" min="30" max="200" step="0.1">
+                  <button class="bju-stepper" data-target="calcWeight" data-step="0.1" aria-label="Увеличить вес">+</button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bju-field-group">
+              <label class="bju-label">Возраст</label>
+              <div class="bju-stepper-row">
+                <button class="bju-stepper" data-target="calcAge" data-step="-1" aria-label="Уменьшить возраст">−</button>
+                <input type="number" class="bju-input" id="calcAge" placeholder="25" min="10" max="100" step="1">
+                <button class="bju-stepper" data-target="calcAge" data-step="1" aria-label="Увеличить возраст">+</button>
+              </div>
+            </div>
+            
+            <div class="bju-field-group">
+              <label class="bju-label">Пол</label>
+              <div class="bju-tabs" role="tablist" aria-label="Пол">
+                <button class="bju-tab active" type="button" role="tab" aria-selected="true" data-value="male">Мужской</button>
+                <button class="bju-tab" type="button" role="tab" aria-selected="false" data-value="female">Женский</button>
+              </div>
+              <input type="hidden" id="calcSex" value="male">
+            </div>
+            
+            <div class="bju-field-group">
+              <label class="bju-label">Уровень активности</label>
+              <select class="bju-select" id="bjuActivity">
+                <option value="1.2">Минимальная (сидячий образ жизни)</option>
+                <option value="1.375" selected>Легкая (легкие упражнения 1-3 раза/нед)</option>
+                <option value="1.55">Умеренная (умеренные упражнения 3-5 раз/нед)</option>
+                <option value="1.725">Высокая (тяжелые упражнения 6-7 раз/нед)</option>
+                <option value="1.9">Очень высокая (очень тяжелые упражнения)</option>
+              </select>
+            </div>
+            
+            <div class="bju-field-group">
+              <label class="bju-label">Цель</label>
+              <select class="bju-select" id="bjuGoal">
+                <option value="maintain" selected>Поддержание веса</option>
+                <option value="lose">Сброс веса (дефицит -500 ккал)</option>
+                <option value="gain">Набор веса (профицит +500 ккал)</option>
+              </select>
+            </div>
+            
+            <button class="bju-calculate-btn" id="bjuCalculateBtn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="currentColor"/>
+              </svg>
+              <span>Рассчитать БЖУ</span>
+            </button>
+          </div>
+          
+          <div class="bju-results" id="bjuResults" style="display: none;">
+            <div class="bju-results-header">
+              <h3 class="bju-results-title">Твоя суточная норма</h3>
+            </div>
+            
+            <div class="bju-calories-card is-empty" id="bjuCaloriesCard">
+              <div class="bju-calories-value" id="bjuCalories">
+                <span class="bju-calories-number">—</span>
+              </div>
+              <div class="bju-calories-hint" id="bjuCaloriesHint">Заполни данные</div>
+              <div class="bju-calories-label">ккал в день</div>
+            </div>
+            
+            <div class="bju-macros">
+              <div class="bju-macro-card protein">
+                <div class="bju-macro-icon">🥩</div>
+                <div class="bju-macro-label">Белки</div>
+                <div class="bju-macro-value" id="bjuProtein">—</div>
+                <div class="bju-macro-unit">г</div>
+                <div class="bju-macro-percent" id="bjuProteinPercent">—%</div>
+              </div>
+              
+              <div class="bju-macro-card fat">
+                <div class="bju-macro-icon">🥑</div>
+                <div class="bju-macro-label">Жиры</div>
+                <div class="bju-macro-value" id="bjuFat">—</div>
+                <div class="bju-macro-unit">г</div>
+                <div class="bju-macro-percent" id="bjuFatPercent">—%</div>
+              </div>
+              
+              <div class="bju-macro-card carbs">
+                <div class="bju-macro-icon">🍚</div>
+                <div class="bju-macro-label">Углеводы</div>
+                <div class="bju-macro-value" id="bjuCarbs">—</div>
+                <div class="bju-macro-unit">г</div>
+                <div class="bju-macro-percent" id="bjuCarbsPercent">—%</div>
+              </div>
+            </div>
+            
+            <div class="bju-info">
+              <div class="bju-info-item">
+                <span class="bju-info-label">Базовый метаболизм (BMR):</span>
+                <span class="bju-info-value" id="bjuBMR">—</span>
+              </div>
+              <div class="bju-info-item">
+                <span class="bju-info-label">Общий расход энергии (TDEE):</span>
+                <span class="bju-info-value" id="bjuTDEE">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Страница: Настройки -->
+    <div class="page" id="pageSettings" data-page="settings" style="display: none;">
+      <!-- Уведомления -->
+      <div class="notifications-section" id="notificationsSection">
+        <div class="notifications-header">
+          <div class="notifications-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C11.3369 11.5 10.7011 11.2366 10.2322 10.7678C9.76339 10.2989 9.5 9.66304 9.5 9C9.5 8.33696 9.76339 7.70107 10.2322 7.23223C10.7011 6.76339 11.3369 6.5 12 6.5C12.663 6.5 13.2989 6.76339 13.7678 7.23223C14.2366 7.70107 14.5 8.33696 14.5 9C14.5 9.66304 14.2366 10.2989 13.7678 10.7678C13.2989 11.2366 12.663 11.5 12 11.5Z" fill="currentColor"/>
+              <path d="M18 21H6C5.45 21 5 20.55 5 20C5 19.45 5.45 19 6 19H18C18.55 19 19 19.45 19 20C19 20.55 18.55 21 18 21Z" fill="currentColor"/>
+            </svg>
+          </div>
+          <span class="notifications-title">Уведомления</span>
+        </div>
+        
+        <div class="notifications-content">
+          <div class="notifications-description">
+            Настрой, как часто бот будет отправлять тебе мотивирующие сообщения
+          </div>
+          
+          <div class="frequency-options" id="frequencyOptions">
+            <!-- Опции будут добавлены через JS -->
+          </div>
+          
+          <div class="notifications-status" id="notificationsStatus">
+            <div class="status-icon">✓</div>
+            <div class="status-text">Настройки сохранены</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Профиль -->
+      <div class="settings-section" id="profileSection">
+        <div class="settings-header">
+          <div class="settings-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="currentColor"/>
+            </svg>
+          </div>
+          <span class="settings-title">Профиль</span>
+        </div>
+        
+        <div class="settings-content">
+          <div class="settings-description">
+            Укажи свои параметры для более точных рекомендаций
+          </div>
+          
+          <div class="profile-fields">
+            <div class="profile-fields-row">
+              <div class="profile-field">
+                <label class="profile-label">
+                  <svg class="profile-label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM12.5 6V11.25L17 13.92L16.25 15.08L11 12V6H12.5Z" fill="currentColor"/>
+                  </svg>
+                  Рост (см)
+                </label>
+                <input type="number" class="profile-input" id="profileHeight" placeholder="175" min="100" max="250">
+              </div>
+              <div class="profile-field">
+                <label class="profile-label">
+                  <svg class="profile-label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM12.5 6V11.25L17 13.92L16.25 15.08L11 12V6H12.5Z" fill="currentColor"/>
+                  </svg>
+                  Вес (кг)
+                </label>
+                <input type="number" class="profile-input" id="profileWeight" placeholder="70" min="30" max="200" step="0.1">
+              </div>
+            </div>
+            <div class="profile-fields-row">
+              <div class="profile-field">
+                <label class="profile-label">
+                  <svg class="profile-label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM12.5 6V11.25L17 13.92L16.25 15.08L11 12V6H12.5Z" fill="currentColor"/>
+                  </svg>
+                  Возраст
+                </label>
+                <input type="number" class="profile-input" id="profileAge" placeholder="25" min="10" max="100">
+              </div>
+              <div class="profile-field">
+                <label class="profile-label">
+                  <svg class="profile-label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM12.5 6V11.25L17 13.92L16.25 15.08L11 12V6H12.5Z" fill="currentColor"/>
+                  </svg>
+                  Пол
+                </label>
+                <select class="profile-select" id="profileSex">
+                  <option value="">Не указано</option>
+                  <option value="male">Мужской</option>
+                  <option value="female">Женский</option>
+                </select>
+              </div>
+            </div>
+            <div class="profile-field">
+              <label class="profile-label">
+                <svg class="profile-label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
+                </svg>
+                Цель тренировок
+              </label>
+              <select class="profile-select" id="profileGoal">
+                <option value="weight_loss">Похудение</option>
+                <option value="muscle_gain">Набор массы</option>
+                <option value="strength">Развитие силы</option>
+                <option value="endurance">Выносливость</option>
+                <option value="general">Общее здоровье</option>
+              </select>
+            </div>
+            <div class="profile-field">
+              <label class="profile-label">
+                <svg class="profile-label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM12.5 6V11.25L17 13.92L16.25 15.08L11 12V6H12.5Z" fill="currentColor"/>
+                </svg>
+                Уровень опыта
+              </label>
+              <select class="profile-select" id="profileExperience">
+                <option value="beginner">Новичок</option>
+                <option value="intermediate">Средний</option>
+                <option value="advanced">Продвинутый</option>
+              </select>
+            </div>
+            <div class="profile-field">
+              <label class="profile-label">
+                <svg class="profile-label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM12.5 6V11.25L17 13.92L16.25 15.08L11 12V6H12.5Z" fill="currentColor"/>
+                </svg>
+                Травмы/ограничения
+              </label>
+              <input type="text" class="profile-input" id="profileInjuries" placeholder="Например: проблемы с коленями">
+            </div>
+            <div class="profile-field">
+              <label class="profile-label">
+                <svg class="profile-label-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM12.5 6V11.25L17 13.92L16.25 15.08L11 12V6H12.5Z" fill="currentColor"/>
+                </svg>
+                Доступное оборудование
+              </label>
+              <input type="text" class="profile-input" id="profileEquipment" placeholder="Например: штанга, гантели, турник">
+            </div>
+          </div>
+          
+          <button class="profile-save-btn" id="profileSaveBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Сохранить профиль
+          </button>
+          
+          <div class="profile-status" id="profileStatus" style="display: none;">
+            <div class="status-icon">✓</div>
+            <div class="status-text">Профиль сохранен</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Система целей -->
+      <div class="settings-section" id="goalsSection">
+        <div class="settings-header">
+          <div class="settings-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM11 16L18 9L16.59 7.59L11 13.17L7.41 9.59L6 11L11 16Z" fill="currentColor"/>
+            </svg>
+          </div>
+          <span class="settings-title">Мои цели</span>
+        </div>
+        
+        <div class="settings-content">
+          <div class="settings-description">
+            Установи цели для отслеживания прогресса
+          </div>
+          
+          <div class="goal-item">
+            <div class="goal-header">
+              <div class="goal-info">
+                <div class="goal-label">Тренировок в неделю</div>
+                <div class="goal-description">Цель по количеству тренировок</div>
+              </div>
+              <div class="goal-value" id="weeklyGoalValue">3</div>
+            </div>
+            <div class="goal-controls">
+              <button class="goal-btn minus" id="weeklyGoalMinus" aria-label="Уменьшить цель">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19 13H5V11H19V13Z" fill="currentColor"/>
+                </svg>
+              </button>
+              <input type="number" class="goal-input" id="weeklyGoalInput" min="1" max="14" value="3">
+              <button class="goal-btn plus" id="weeklyGoalPlus" aria-label="Увеличить цель">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19 13H13V19H11V13H5V11H11V5H13V11H19V13Z" fill="currentColor"/>
+                </svg>
+              </button>
+            </div>
+            <div class="goal-progress" id="weeklyGoalProgress" style="display: none;">
+              <div class="goal-progress-bar">
+                <div class="goal-progress-fill" id="weeklyGoalProgressFill"></div>
+              </div>
+              <div class="goal-progress-text" id="weeklyGoalProgressText">0/0</div>
+            </div>
+          </div>
+          
+          <button class="goal-save-btn" id="saveGoalsBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Сохранить цели
+          </button>
+          
+          <div class="profile-status" id="goalsStatus" style="display: none;">
+            <div class="status-icon">✓</div>
+            <div class="status-text">Цели сохранены</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Напоминания -->
+      <div class="settings-section" id="remindersSection">
+        <div class="settings-header">
+          <div class="settings-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z" fill="currentColor"/>
+            </svg>
+          </div>
+          <span class="settings-title">Напоминания</span>
+        </div>
+        
+        <div class="settings-content">
+          <div class="settings-description">
+            Настрой автоматические напоминания о тренировках
+          </div>
+          
+          <div class="reminder-options">
+            <div class="reminder-option">
+              <div class="reminder-toggle" id="reminderToggle">
+                <div class="reminder-toggle-slider"></div>
+              </div>
+              <div class="reminder-info">
+                <div class="reminder-label">Включить напоминания</div>
+                <div class="reminder-description">Бот будет напоминать о тренировках</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="notifications-status" id="remindersStatus" style="display: none;">
+            <div class="status-icon">✓</div>
+            <div class="status-text">Настройки сохранены</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Экспорт данных -->
+      <div class="settings-section" id="exportSection">
+        <div class="settings-header">
+          <div class="settings-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 12V19H5V12H3V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V12H19ZM13 12.67L15.59 10.09L17 11.5L12 16.5L7 11.5L8.41 10.09L11 12.67V3H13V12.67Z" fill="currentColor"/>
+            </svg>
+          </div>
+          <span class="settings-title">Экспорт данных</span>
+        </div>
+        
+        <div class="settings-content">
+          <div class="settings-description">
+            Скачай все свои данные тренировок
+          </div>
+          
+          <button class="export-btn" id="exportDataBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 12V19H5V12H3V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V12H19ZM13 12.67L15.59 10.09L17 11.5L12 16.5L7 11.5L8.41 10.09L11 12.67V3H13V12.67Z" fill="currentColor"/>
+            </svg>
+            Экспортировать данные
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="status" id="status">Загрузка…      </div>
+    </div>
+
+    <!-- Нижнее меню навигации -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-page="today" id="navToday">
+      <div class="nav-icon" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 20V14H14V20H19V12H22L12 3L2 12H5V20H10Z" fill="currentColor"/>
+        </svg>
+      </div>
+      <span class="nav-label">сегодня</span>
+    </button>
+    <button class="nav-item" data-page="plan" id="navPlan">
+      <div class="nav-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.89 22 5.99 22H18C19.1 22 20 21.1 20 20V8L14 2ZM16 18H8V16H16V18ZM16 14H8V12H16V14ZM13 9V3.5L18.5 9H13Z" fill="currentColor"/>
+        </svg>
+      </div>
+      <span class="nav-label">план</span>
+    </button>
+    <button class="nav-item" data-page="results" id="navResults">
+      <div class="nav-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V5H19V19ZM17 12H7V10H17V12ZM15 16H7V14H15V16ZM17 8H7V6H17V8Z" fill="currentColor"/>
+        </svg>
+      </div>
+      <span class="nav-label">результаты</span>
+    </button>
+    <button class="nav-item" data-page="stats" id="navStats">
+      <div class="nav-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 3V21H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M7 16L12 11L16 15L21 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M21 10V3H14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="nav-label">статистика</span>
+    </button>
+    <button class="nav-item" data-page="calculator" id="navCalculator">
+      <div class="nav-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V5H19V19ZM17 12H7V10H17V12ZM15 16H7V14H15V16ZM17 8H7V6H17V8Z" fill="currentColor"/>
+          <path d="M12 4L9 7H11V12H13V7H15L12 4Z" fill="currentColor"/>
+        </svg>
+      </div>
+      <span class="nav-label">калькулятор</span>
+    </button>
+  </nav>
+
+  <script src="/tracker.js?v=143"></script>
+  <script src="mode-bar.js"></script>
+</body>
+</html>
