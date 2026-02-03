@@ -9,6 +9,7 @@ on:
       - '.gitignore'
       - '*.bak.*'
       - '*.broken.*'
+  workflow_dispatch: {}
 
 jobs:
   deploy:
