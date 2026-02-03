@@ -4,11 +4,6 @@ on:
   push:
     branches:
       - main  # Измените на вашу ветку если нужно
-    paths-ignore:
-      - '*.md'
-      - '.gitignore'
-      - '*.bak.*'
-      - '*.broken.*'
   workflow_dispatch: {}
 
 jobs:
