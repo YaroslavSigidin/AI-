@@ -33,8 +33,8 @@ jobs:
         SERVER_HOST: ${{ secrets.SERVER_HOST }}
         SERVER_USER: ${{ secrets.SERVER_USER }}
         SERVER_PATH: ${{ secrets.SERVER_PATH }}
-        SSH_OPTS: "-o IdentitiesOnly=yes -i /home/runner/.ssh/id_rsa"
       run: |
+        SSH_CMD="ssh -o IdentitiesOnly=yes -i /home/runner/.ssh/id_rsa"
         # Создаем временный exclude файл
         cat > /tmp/rsync_exclude << EOF
         .bak.*
@@ -60,7 +60,7 @@ jobs:
         # Синхронизируем файлы
         rsync -avz --delete \
           --exclude-from=/tmp/rsync_exclude \
-          -e "ssh ${{ secrets.SSH_OPTS }}" \
+          -e "$SSH_CMD" \
           ./ "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/"
     
     - name: Install dependencies and restart
@@ -68,9 +68,8 @@ jobs:
         SERVER_HOST: ${{ secrets.SERVER_HOST }}
         SERVER_USER: ${{ secrets.SERVER_USER }}
         SERVER_PATH: ${{ secrets.SERVER_PATH }}
-        SSH_OPTS: "-o IdentitiesOnly=yes -i /home/runner/.ssh/id_rsa"
       run: |
-        ssh ${{ secrets.SSH_OPTS }} "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" << 'ENDSSH'
+        ssh -o IdentitiesOnly=yes -i /home/runner/.ssh/id_rsa "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" << 'ENDSSH'
           cd ${{ secrets.SERVER_PATH }}
           pip install --quiet --no-cache-dir -r requirements.txt
           chmod +x restart.sh 2>/dev/null || true
