@@ -25,13 +25,14 @@ jobs:
         printf '%s' "${{ secrets.SSH_PRIVATE_KEY_B64 }}" | base64 -d > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+        ls -l ~/.ssh
     
     - name: Deploy to server
       env:
         SERVER_HOST: ${{ secrets.SERVER_HOST }}
         SERVER_USER: ${{ secrets.SERVER_USER }}
         SERVER_PATH: ${{ secrets.SERVER_PATH }}
-        SSH_OPTS: ${{ secrets.SSH_OPTS }}
+        SSH_OPTS: "-o IdentitiesOnly=yes -i /home/runner/.ssh/id_rsa"
       run: |
         # Создаем временный exclude файл
         cat > /tmp/rsync_exclude << EOF
@@ -66,7 +67,7 @@ jobs:
         SERVER_HOST: ${{ secrets.SERVER_HOST }}
         SERVER_USER: ${{ secrets.SERVER_USER }}
         SERVER_PATH: ${{ secrets.SERVER_PATH }}
-        SSH_OPTS: ${{ secrets.SSH_OPTS }}
+        SSH_OPTS: "-o IdentitiesOnly=yes -i /home/runner/.ssh/id_rsa"
       run: |
         ssh ${{ secrets.SSH_OPTS }} "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" << 'ENDSSH'
           cd ${{ secrets.SERVER_PATH }}
