@@ -31,9 +31,9 @@ jobs:
     
     - name: Deploy to server
       env:
-        SERVER_HOST: ${{ secrets.SERVER_HOST }}
-        SERVER_USER: ${{ secrets.SERVER_USER }}
-        SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        SERVER_HOST: "85.193.89.214"
+        SERVER_USER: "root"
+        SERVER_PATH: "/root/ai_trainer_cursor"
       run: |
         SSH_CMD="ssh -o IdentitiesOnly=yes -i /home/runner/.ssh/id_rsa"
         # Создаем временный exclude файл
@@ -62,16 +62,16 @@ jobs:
         rsync -avz --delete \
           --exclude-from=/tmp/rsync_exclude \
           -e "$SSH_CMD" \
-          ./ "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/"
+          ./ "${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/"
     
     - name: Install dependencies and restart
       env:
-        SERVER_HOST: ${{ secrets.SERVER_HOST }}
-        SERVER_USER: ${{ secrets.SERVER_USER }}
-        SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        SERVER_HOST: "85.193.89.214"
+        SERVER_USER: "root"
+        SERVER_PATH: "/root/ai_trainer_cursor"
       run: |
-        ssh -o IdentitiesOnly=yes -i /home/runner/.ssh/id_rsa "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" << 'ENDSSH'
-          cd ${{ secrets.SERVER_PATH }}
+        ssh -o IdentitiesOnly=yes -i /home/runner/.ssh/id_rsa "${SERVER_USER}@${SERVER_HOST}" << 'ENDSSH'
+          cd /root/ai_trainer_cursor
           pip install --quiet --no-cache-dir -r requirements.txt
           chmod +x restart.sh 2>/dev/null || true
           ./restart.sh || echo "⚠️ Команда restart.sh не выполнена, перезапустите вручную"
