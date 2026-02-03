@@ -1,0 +1,4 @@
+# Типы: feat | fix | ui | refactor | docs | chore
+# Пример: feat: add trainer login flow
+
+
