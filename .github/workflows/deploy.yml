@@ -22,7 +22,7 @@ jobs:
     - name: Setup SSH
       run: |
         mkdir -p /home/runner/.ssh
-        printf '%s' "${{ secrets.SSH_PRIVATE_KEY_B64 }}" | base64 -d > /home/runner/.ssh/id_rsa
+        printf '%s' "${{ secrets.SSH_PRIVATE_KEY }}" > /home/runner/.ssh/id_rsa
         chmod 600 /home/runner/.ssh/id_rsa
         test -s /home/runner/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> /home/runner/.ssh/known_hosts
