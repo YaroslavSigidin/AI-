@@ -35,7 +35,7 @@
       <div class="card form-card">
         <div class="card-head">
           <h2>Добавить тренера</h2>
-          <p class="card-subtitle">Создай доступ и промокоды. Пароль показываем один раз.</p>
+          <p class="card-subtitle">Укажи ФИО. Логин и пароль создадим автоматически.</p>
         </div>
         <div class="form-main">
           <label class="field-label" for="trainerName">Имя тренера</label>
@@ -43,18 +43,18 @@
 
           <div class="form-row">
             <div class="field">
-              <label class="field-label" for="trainerLogin">Логин</label>
-              <input id="trainerLogin" type="text" placeholder="trainer_daria">
+              <label class="field-label">Логин</label>
+              <div class="static-field">Сгенерируется автоматически</div>
             </div>
             <div class="field">
-              <label class="field-label" for="trainerPassword">Пароль</label>
-              <input id="trainerPassword" type="text" placeholder="пароль (опционально)">
+              <label class="field-label">Пароль</label>
+              <div class="static-field">Сгенерируется автоматически</div>
             </div>
           </div>
 
           <div class="form-actions">
             <button id="addTrainerBtn" type="button">Добавить тренера</button>
-            <span class="hint">Если логин/пароль пустые — сгенерируем.</span>
+            <span class="hint">Пароль показывается один раз после создания.</span>
           </div>
         </div>
       </div>

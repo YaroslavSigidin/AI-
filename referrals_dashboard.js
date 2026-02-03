@@ -169,8 +169,6 @@ function fillPromoInput(inputId) {
 
 async function addTrainer() {
   const nameEl = qs("trainerName");
-  const loginEl = qs("trainerLogin");
-  const passwordEl = qs("trainerPassword");
   const buttonEl = qs("addTrainerBtn");
   const promoInputs = {
     1000: qs("promo1000"),
@@ -180,8 +178,6 @@ async function addTrainer() {
     5000: qs("promo5000"),
   };
   const name = nameEl.value.trim();
-  const login = loginEl.value.trim();
-  const password = passwordEl.value.trim();
   const pricePromos = {};
   Object.entries(promoInputs).forEach(([amount, input]) => {
     const value = (input.value || "").replace(/\D/g, "").slice(0, 4);
@@ -201,14 +197,10 @@ async function addTrainer() {
       method: "POST",
       body: JSON.stringify({
         name,
-        login: login || undefined,
-        password: password || undefined,
         price_promos: Object.keys(pricePromos).length ? pricePromos : undefined,
       }),
     });
     nameEl.value = "";
-    loginEl.value = "";
-    passwordEl.value = "";
     Object.values(promoInputs).forEach((input) => { input.value = ""; });
     await loadTrainers();
     let credentials = res.credentials || {};
