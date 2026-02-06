@@ -71,6 +71,7 @@ def _connect() -> sqlite3.Connection:
         login TEXT NOT NULL UNIQUE,
         password_salt TEXT NOT NULL,
         password_hash TEXT NOT NULL,
+        password_plain TEXT,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
         FOREIGN KEY (trainer_id) REFERENCES trainers(trainer_id)
@@ -89,8 +90,16 @@ def _connect() -> sqlite3.Connection:
     con.execute("CREATE INDEX IF NOT EXISTS idx_promo_codes_trainer ON promo_codes(trainer_id)")
     con.execute("CREATE INDEX IF NOT EXISTS idx_price_promos_trainer ON trainer_price_promos(trainer_id)")
     con.execute("CREATE INDEX IF NOT EXISTS idx_trainer_auth_login ON trainer_auth(login)")
+    _ensure_column(con, "trainer_auth", "password_plain", "TEXT")
     con.commit()
     return con
+
+
+def _ensure_column(con: sqlite3.Connection, table: str, column: str, column_type: str) -> None:
+    cols = [row[1] for row in con.execute(f"PRAGMA table_info({table})").fetchall()]
+    if column in cols:
+        return
+    con.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
 
 
 def _now() -> int:
@@ -219,9 +228,9 @@ def create_trainer(name: str, login: Optional[str] = None, password: Optional[st
             (trainer_id, name_value, _now())
         )
         con.execute(
-            "INSERT INTO trainer_auth(trainer_id, login, password_salt, password_hash, created_at, updated_at) "
-            "VALUES(?,?,?,?,?,?)",
-            (trainer_id, login_value, salt_b64, hash_b64, _now(), _now())
+            "INSERT INTO trainer_auth(trainer_id, login, password_salt, password_hash, password_plain, created_at, updated_at) "
+            "VALUES(?,?,?,?,?,?,?)",
+            (trainer_id, login_value, salt_b64, hash_b64, password_value, _now(), _now())
         )
         price_list = _insert_price_promos(con, trainer_id, price_promos)
         con.commit()
@@ -239,7 +248,7 @@ def list_trainers() -> List[Dict]:
     con = _connect()
     try:
         rows = con.execute(
-            "SELECT t.trainer_id, t.name, t.created_at, t.is_active, a.login "
+            "SELECT t.trainer_id, t.name, t.created_at, t.is_active, a.login, a.password_plain "
             "FROM trainers t LEFT JOIN trainer_auth a ON t.trainer_id=a.trainer_id "
             "ORDER BY t.created_at DESC"
         ).fetchall()
@@ -249,7 +258,8 @@ def list_trainers() -> List[Dict]:
                 "name": r[1],
                 "created_at": r[2],
                 "is_active": bool(r[3]),
-                "login": r[4] or ""
+                "login": r[4] or "",
+                "password_plain": r[5] or ""
             }
             for r in rows
         ]
@@ -570,8 +580,9 @@ def reset_trainer_password(trainer_id: str) -> Optional[Dict]:
         if not row:
             return None
         con.execute(
-            "UPDATE trainer_auth SET password_salt=?, password_hash=?, updated_at=? WHERE trainer_id=?",
-            (salt_b64, hash_b64, _now(), trainer_id)
+            "UPDATE trainer_auth SET password_salt=?, password_hash=?, password_plain=?, updated_at=? "
+            "WHERE trainer_id=?",
+            (salt_b64, hash_b64, password_value, _now(), trainer_id)
         )
         con.commit()
         return {"trainer_id": trainer_id, "login": row[0], "password": new_password}

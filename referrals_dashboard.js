@@ -71,6 +71,7 @@ function renderTrainers(trainers) {
   head.innerHTML = `
     <div>Тренер</div>
     <div>Логин</div>
+    <div>Пароль</div>
     <div>Клиенты</div>
     <div>Оплаты</div>
     <div>К выплате</div>
@@ -92,6 +93,10 @@ function renderTrainers(trainers) {
       <div class="table-cell">
         <span>${t.login || "—"}</span>
         <button class="link-btn" data-copy-login="${t.trainer_id}">Копировать</button>
+      </div>
+      <div class="table-cell">
+        <span>${t.password_plain || "—"}</span>
+        <button class="link-btn" data-copy-password="${t.trainer_id}">Копировать</button>
       </div>
       <div class="table-cell">
         <span>${t.bound_clients || 0}</span>
@@ -214,11 +219,16 @@ async function addTrainer() {
         // ignore reset errors; modal will show placeholders
       }
     }
-    if (credentials?.login) {
+    if (credentials?.login || credentials?.password) {
       const id = res.trainer?.trainer_id;
       const existing = cachedTrainers.find(t => t.trainer_id === id);
       if (existing) {
-        existing.login = credentials.login;
+        if (credentials?.login) {
+          existing.login = credentials.login;
+        }
+        if (credentials?.password) {
+          existing.password_plain = credentials.password;
+        }
         renderTrainers(cachedTrainers);
       }
     }
@@ -245,9 +255,6 @@ function openCredentialsModal(trainer, credentials) {
   const passwordValue = credentials?.password || "";
   qs("credLogin").textContent = loginValue;
   qs("credPassword").textContent = passwordValue || "—";
-  qs("credPassword").dataset.hidden = "1";
-  qs("credPassword").textContent = "••••";
-  qs("togglePasswordBtn").textContent = "Показать";
   modal.classList.add("show");
   modal.dataset.login = loginValue === "—" ? "" : loginValue;
   modal.dataset.password = passwordValue;
@@ -259,21 +266,7 @@ function closeCredentialsModal() {
   modal.dataset.login = "";
   modal.dataset.password = "";
   qs("credLogin").textContent = "—";
-  qs("credPassword").textContent = "••••";
-}
-
-function togglePasswordView() {
-  const code = qs("credPassword");
-  const isHidden = code.dataset.hidden === "1";
-  if (isHidden) {
-    code.textContent = qs("credentialsModal").dataset.password || "—";
-    code.dataset.hidden = "0";
-    qs("togglePasswordBtn").textContent = "Скрыть";
-  } else {
-    code.textContent = "••••";
-    code.dataset.hidden = "1";
-    qs("togglePasswordBtn").textContent = "Показать";
-  }
+  qs("credPassword").textContent = "—";
 }
 
 async function resetPassword(trainerId) {
@@ -295,7 +288,6 @@ async function deleteTrainer(trainerId, name) {
 
 qs("addTrainerBtn").addEventListener("click", addTrainer);
 qs("trainerSearch").addEventListener("input", applyFilter);
-qs("togglePasswordBtn").addEventListener("click", togglePasswordView);
 qs("closeModalBtn").addEventListener("click", closeCredentialsModal);
 qs("closeModalBtn2").addEventListener("click", closeCredentialsModal);
 
@@ -341,6 +333,7 @@ qs("trainersTable").addEventListener("click", async (e) => {
   const deleteBtn = e.target.closest("[data-delete]");
   const resetBtn = e.target.closest("[data-reset]");
   const copyLoginBtn = e.target.closest("[data-copy-login]");
+  const copyPasswordBtn = e.target.closest("[data-copy-password]");
   const clientsBtn = e.target.closest("[data-clients]");
   const promosBtn = e.target.closest("[data-promos]");
   const genBtn = e.target.closest("[data-gen]");
@@ -361,6 +354,14 @@ qs("trainersTable").addEventListener("click", async (e) => {
     if (trainer?.login) {
       await navigator.clipboard.writeText(trainer.login);
       showToast("Логин скопирован");
+    }
+    return;
+  }
+  if (copyPasswordBtn) {
+    const trainer = cachedTrainers.find(t => t.trainer_id === copyPasswordBtn.dataset.copyPassword);
+    if (trainer?.password_plain) {
+      await navigator.clipboard.writeText(trainer.password_plain);
+      showToast("Пароль скопирован");
     }
     return;
   }
