@@ -214,6 +214,14 @@ async function addTrainer() {
         // ignore reset errors; modal will show placeholders
       }
     }
+    if (credentials?.login) {
+      const id = res.trainer?.trainer_id;
+      const existing = cachedTrainers.find(t => t.trainer_id === id);
+      if (existing) {
+        existing.login = credentials.login;
+        renderTrainers(cachedTrainers);
+      }
+    }
     openCredentialsModal(res.trainer, credentials);
   } catch (e) {
     let message = e?.message || "Ошибка добавления тренера";
