@@ -12,3 +12,10 @@ services:
       # Bind mount: код на хосте монтируется в контейнер
       - ./:/app
     command: python bot.py
+    networks:
+      - default
+      - tg-miniapp_default
+
+networks:
+  tg-miniapp_default:
+    external: true
