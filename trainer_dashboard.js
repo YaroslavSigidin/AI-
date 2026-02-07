@@ -217,25 +217,48 @@ function formatDateLabel(date){
   return { day, weekday };
 }
 
+function startOfWeek(date){
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1) - day; // monday start
+  d.setDate(d.getDate() + diff);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function toISO(date){
+  return date.toISOString().slice(0, 10);
+}
+
+function setSelectedDate(iso){
+  qs("planDate").value = iso;
+  dateBase = startOfWeek(new Date(iso));
+  renderDateStrip();
+  loadPlans();
+}
+
 function renderDateStrip(){
   const track = qs("dateTrack");
   track.innerHTML = "";
-  const base = dateBase || new Date();
+  const base = dateBase || startOfWeek(new Date(qs("planDate").value || todayISO()));
+  const start = new Date(base);
+  const end = new Date(base);
+  end.setDate(end.getDate() + 6);
+  const rangeLabel = `${start.toLocaleDateString("ru-RU", { day: "2-digit", month: "long" })} — ${end.toLocaleDateString("ru-RU", { day: "2-digit", month: "long" })}`;
+  qs("planRangeLabel").textContent = rangeLabel;
+
   for (let i = 0; i < 7; i += 1){
     const date = new Date(base);
     date.setDate(base.getDate() + i);
-    const iso = date.toISOString().slice(0, 10);
+    const iso = toISO(date);
     const { day, weekday } = formatDateLabel(date);
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "date-pill";
     if (qs("planDate").value === iso) btn.classList.add("active");
-    btn.innerHTML = `<span>${weekday}</span><strong>${day}</strong>`;
-    btn.addEventListener("click", () => {
-      qs("planDate").value = iso;
-      renderDateStrip();
-      loadPlans();
-    });
+    if (iso === todayISO()) btn.classList.add("today");
+    btn.innerHTML = `<span>${weekday}</span><strong>${day}</strong><span class="dot"></span>`;
+    btn.addEventListener("click", () => setSelectedDate(iso));
     track.appendChild(btn);
   }
 }
@@ -271,13 +294,39 @@ async function savePlan(kind, text){
 }
 
 qs("planDate").value = todayISO();
-dateBase = new Date(qs("planDate").value);
+dateBase = startOfWeek(new Date(qs("planDate").value));
 renderDateStrip();
 
 qs("planDate").addEventListener("change", () => {
-  dateBase = new Date(qs("planDate").value);
+  setSelectedDate(qs("planDate").value);
+});
+
+qs("datePrev").addEventListener("click", () => {
+  const base = dateBase || startOfWeek(new Date(qs("planDate").value));
+  base.setDate(base.getDate() - 7);
+  dateBase = base;
+  const selected = new Date(qs("planDate").value);
+  if (selected < base || selected > new Date(base.getTime() + 6 * 86400000)) {
+    setSelectedDate(toISO(base));
+    return;
+  }
   renderDateStrip();
-  loadPlans();
+});
+
+qs("dateNext").addEventListener("click", () => {
+  const base = dateBase || startOfWeek(new Date(qs("planDate").value));
+  base.setDate(base.getDate() + 7);
+  dateBase = base;
+  const selected = new Date(qs("planDate").value);
+  if (selected < base || selected > new Date(base.getTime() + 6 * 86400000)) {
+    setSelectedDate(toISO(base));
+    return;
+  }
+  renderDateStrip();
+});
+
+qs("dateToday").addEventListener("click", () => {
+  setSelectedDate(todayISO());
 });
 
 qs("saveMealsBtn").addEventListener("click", async () => {

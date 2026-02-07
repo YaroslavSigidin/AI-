@@ -308,6 +308,11 @@ body{
   margin:6px 0 0;
   font-size:22px;
 }
+.plan-sub{
+  margin-top:6px;
+  font-size:13px;
+  color:var(--muted);
+}
 .date-picker{
   display:flex;
   align-items:center;
@@ -315,12 +320,30 @@ body{
   font-size:13px;
   color:var(--muted);
 }
+.date-field{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
 .date-picker input{
   background:var(--panel-2);
   border:1px solid var(--stroke);
   color:var(--text);
   padding:6px 10px;
   border-radius:8px;
+}
+.date-btn{
+  background:var(--panel-2);
+  border:1px solid var(--stroke);
+  color:var(--text);
+  padding:6px 10px;
+  border-radius:8px;
+  font-size:13px;
+  cursor:pointer;
+}
+.date-btn.ghost{
+  background:transparent;
+  color:var(--muted);
 }
 .date-strip{
   width:100%;
@@ -348,6 +371,16 @@ body{
   font-size:12px;
   cursor:pointer;
   transition:all 0.2s ease;
+}
+.date-pill .dot{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  margin:6px auto 0;
+  background:transparent;
+}
+.date-pill.today .dot{
+  background:var(--accent);
 }
 .date-pill strong{
   display:block;
