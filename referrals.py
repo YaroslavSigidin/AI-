@@ -102,6 +102,41 @@ def _ensure_column(con: sqlite3.Connection, table: str, column: str, column_type
     con.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
 
 
+def _ensure_trainer_auth(con: sqlite3.Connection, trainer_id: str) -> tuple[str, str]:
+    row = con.execute(
+        "SELECT login, password_plain FROM trainer_auth WHERE trainer_id=?",
+        (trainer_id,)
+    ).fetchone()
+    if row:
+        login_value = row[0] or ""
+        password_plain = row[1] or ""
+        if not login_value:
+            login_value = _generate_login(con)
+            con.execute(
+                "UPDATE trainer_auth SET login=?, updated_at=? WHERE trainer_id=?",
+                (login_value, _now(), trainer_id)
+            )
+        if not password_plain:
+            password_plain = _generate_password()
+            salt_b64, hash_b64 = _hash_password(password_plain)
+            con.execute(
+                "UPDATE trainer_auth SET password_salt=?, password_hash=?, password_plain=?, updated_at=? "
+                "WHERE trainer_id=?",
+                (salt_b64, hash_b64, password_plain, _now(), trainer_id)
+            )
+        return login_value, password_plain
+
+    login_value = _generate_login(con)
+    password_plain = _generate_password()
+    salt_b64, hash_b64 = _hash_password(password_plain)
+    con.execute(
+        "INSERT INTO trainer_auth(trainer_id, login, password_salt, password_hash, password_plain, created_at, updated_at) "
+        "VALUES(?,?,?,?,?,?,?)",
+        (trainer_id, login_value, salt_b64, hash_b64, password_plain, _now(), _now())
+    )
+    return login_value, password_plain
+
+
 def _now() -> int:
     return int(time.time())
 
@@ -252,17 +287,25 @@ def list_trainers() -> List[Dict]:
             "FROM trainers t LEFT JOIN trainer_auth a ON t.trainer_id=a.trainer_id "
             "ORDER BY t.created_at DESC"
         ).fetchall()
-        return [
-            {
-                "trainer_id": r[0],
-                "name": r[1],
-                "created_at": r[2],
-                "is_active": bool(r[3]),
-                "login": r[4] or "",
-                "password_plain": r[5] or ""
-            }
-            for r in rows
-        ]
+        trainers: List[Dict] = []
+        for r in rows:
+            trainer_id = r[0]
+            login_value = r[4] or ""
+            password_plain = r[5] or ""
+            if not login_value or not password_plain:
+                login_value, password_plain = _ensure_trainer_auth(con, trainer_id)
+                con.commit()
+            trainers.append(
+                {
+                    "trainer_id": trainer_id,
+                    "name": r[1],
+                    "created_at": r[2],
+                    "is_active": bool(r[3]),
+                    "login": login_value,
+                    "password_plain": password_plain,
+                }
+            )
+        return trainers
     finally:
         con.close()
 
