@@ -149,6 +149,22 @@ def _normalize_numeric_code(code: str) -> str:
     return "".join(ch for ch in (code or "") if ch.isdigit())
 
 
+MAX_PROMO_LEN = 64
+
+
+def _normalize_promo(code: str) -> str:
+    return _normalize_code(code)
+
+
+def _validate_promo(code: str) -> str:
+    normalized = _normalize_promo(code)
+    if not normalized:
+        raise ValueError("promo code is required")
+    if len(normalized) > MAX_PROMO_LEN:
+        raise ValueError("promo code is too long")
+    return normalized
+
+
 def _normalize_login(login: str) -> str:
     return (login or "").strip().lower()
 
@@ -210,24 +226,20 @@ def _generate_price_promo_code(amount_rub: int, con: sqlite3.Connection, length:
 def _insert_price_promos(con: sqlite3.Connection, trainer_id: str, price_promos: Optional[Dict[int, str]] = None) -> List[Dict]:
     created = []
     provided = price_promos or {}
-    for amount in PRICE_PROMO_AMOUNTS:
-        raw_code = _normalize_numeric_code(provided.get(amount) or "")
-        if raw_code:
-            if len(raw_code) > 4:
-                raise ValueError("promo code must be up to 4 digits")
-            exists = con.execute(
-                "SELECT code FROM trainer_price_promos WHERE code=?",
-                (raw_code,)
-            ).fetchone()
-            exists2 = con.execute(
-                "SELECT code FROM promo_codes WHERE code=?",
-                (raw_code,)
-            ).fetchone()
-            if exists or exists2:
-                raise ValueError(f"promo code {raw_code} already exists")
-            code = raw_code
-        else:
-            code = _generate_price_promo_code(amount, con=con)
+    for amount, raw in provided.items():
+        if amount not in PRICE_PROMO_AMOUNTS:
+            continue
+        code = _validate_promo(raw)
+        exists = con.execute(
+            "SELECT code FROM trainer_price_promos WHERE code=?",
+            (code,)
+        ).fetchone()
+        exists2 = con.execute(
+            "SELECT code FROM promo_codes WHERE code=?",
+            (code,)
+        ).fetchone()
+        if exists or exists2:
+            raise ValueError(f"promo code {code} already exists")
         con.execute(
             "INSERT INTO trainer_price_promos(code, trainer_id, amount_rub, created_at, is_active) VALUES(?,?,?,?,1)",
             (code, trainer_id, float(amount), _now())
@@ -267,18 +279,12 @@ def create_trainer(name: str, login: Optional[str] = None, password: Optional[st
             "VALUES(?,?,?,?,?,?,?)",
             (trainer_id, login_value, salt_b64, hash_b64, password_value, _now(), _now())
         )
-        promo_code = generate_promo_code()
-        con.execute(
-            "INSERT INTO promo_codes(code, trainer_id, created_at, is_active) VALUES(?,?,?,1)",
-            (promo_code, trainer_id, _now())
-        )
         price_list = _insert_price_promos(con, trainer_id, price_promos)
         con.commit()
         return {
             "trainer_id": trainer_id,
             "login": login_value,
             "password": password_value,
-            "promo_code": promo_code,
             "price_promos": price_list,
         }
     finally:
@@ -317,11 +323,15 @@ def list_trainers() -> List[Dict]:
 
 
 def create_promo_code(trainer_id: str, code: Optional[str] = None) -> str:
-    code = _normalize_numeric_code(code) if code else generate_promo_code()
-    if code and len(code) > 4:
-        raise ValueError("promo code must be up to 4 digits")
+    code = _validate_promo(code or "")
     con = _connect()
     try:
+        existing = con.execute(
+            "SELECT 1 FROM promo_codes WHERE code=?",
+            (code,)
+        ).fetchone()
+        if existing:
+            raise ValueError(f"promo code {code} already exists")
         con.execute(
             "INSERT INTO promo_codes(code, trainer_id, created_at, is_active) VALUES(?,?,?,1)",
             (code, trainer_id, _now())
@@ -349,7 +359,7 @@ def list_trainer_price_promos(trainer_id: str) -> List[Dict]:
             for code, _created_at in promo_rows:
                 for amount in PRICE_PROMO_AMOUNTS:
                     prefix = f"D{amount}"
-                    if code.startswith(prefix):
+                    if code.startswith(prefix) and len(code) == len(prefix) + 4 and code[len(prefix):].isdigit():
                         if amount not in existing:
                             existing[amount] = code
                         break

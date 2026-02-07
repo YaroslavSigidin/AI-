@@ -281,6 +281,21 @@ button:disabled {
   z-index: 10;
   width: 240px;
 }
+.popover .promo-add {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.popover .promo-add input {
+  min-width: 0;
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+.popover .promo-add button {
+  padding: 6px 8px;
+  font-size: 12px;
+}
 .popover.show {
   display: block;
 }

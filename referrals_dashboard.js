@@ -120,6 +120,10 @@ function renderTrainers(trainers) {
           ${generalPromos.length ? generalPromos.map(code => `
             <div class="code-row"><span>Код</span><strong>${code}</strong></div>
           `).join("") : `<div class="code-row"><span>—</span><span>Нет</span></div>`}
+          <div class="promo-add">
+            <input type="text" placeholder="Новый промокод" data-new-promo-input="${t.trainer_id}">
+            <button type="button" data-add-promo="${t.trainer_id}">Добавить</button>
+          </div>
         </div>
       </div>
       <div class="actions">
@@ -162,16 +166,6 @@ function applyFilter() {
   renderTrainers(filtered);
 }
 
-function generateCode() {
-  return String(Math.floor(1000 + Math.random() * 9000));
-}
-
-function fillPromoInput(inputId) {
-  const input = qs(inputId);
-  if (!input) return;
-  input.value = generateCode();
-}
-
 async function addTrainer() {
   const nameEl = qs("trainerName");
   const buttonEl = qs("addTrainerBtn");
@@ -185,7 +179,7 @@ async function addTrainer() {
   const name = nameEl.value.trim();
   const pricePromos = {};
   Object.entries(promoInputs).forEach(([amount, input]) => {
-    const value = (input.value || "").replace(/\D/g, "").slice(0, 4);
+    const value = (input.value || "").trim();
     if (value) {
       pricePromos[amount] = value;
     }
@@ -325,7 +319,7 @@ Object.values({
   promo5000: qs("promo5000"),
 }).forEach((input) => {
   input.addEventListener("input", () => {
-    input.value = (input.value || "").replace(/\D/g, "").slice(0, 4);
+    input.value = (input.value || "").trim();
   });
 });
 
@@ -336,8 +330,8 @@ qs("trainersTable").addEventListener("click", async (e) => {
   const copyPasswordBtn = e.target.closest("[data-copy-password]");
   const clientsBtn = e.target.closest("[data-clients]");
   const promosBtn = e.target.closest("[data-promos]");
-  const genBtn = e.target.closest("[data-gen]");
   const copyInputBtn = e.target.closest("[data-copy-input]");
+  const addPromoBtn = e.target.closest("[data-add-promo]");
 
   if (deleteBtn) {
     const row = deleteBtn.closest(".table-row");
@@ -395,16 +389,30 @@ qs("trainersTable").addEventListener("click", async (e) => {
     activePopoverId = popover.classList.contains("show") ? trainerId : null;
     return;
   }
-  if (genBtn) {
-    fillPromoInput(genBtn.dataset.gen);
-    return;
-  }
   if (copyInputBtn) {
     const input = qs(copyInputBtn.dataset.copyInput);
     if (input?.value) {
       await navigator.clipboard.writeText(input.value);
       showToast("Промокод скопирован");
     }
+    return;
+  }
+  if (addPromoBtn) {
+    const trainerId = addPromoBtn.dataset.addPromo;
+    const input = document.querySelector(`[data-new-promo-input="${trainerId}"]`);
+    const value = (input?.value || "").trim();
+    if (!value) {
+      showToast("Введите промокод");
+      return;
+    }
+    await api("/admin/referrals/promos", {
+      method: "POST",
+      body: JSON.stringify({ trainer_id: trainerId, code: value }),
+    });
+    if (input) input.value = "";
+    await loadTrainers();
+    showToast("Промокод добавлен");
+    return;
   }
 });
 
@@ -434,9 +442,7 @@ loadTrainers().catch((e) => {
 
 // Promo action buttons
 ["promo1000","promo2000","promo3000","promo4000","promo5000"].forEach((id) => {
-  const genBtn = document.querySelector(`[data-gen="${id}"]`);
   const copyBtn = document.querySelector(`[data-copy-input="${id}"]`);
-  genBtn?.addEventListener("click", () => fillPromoInput(id));
   copyBtn?.addEventListener("click", async () => {
     const input = qs(id);
     if (input?.value) {

@@ -241,6 +241,8 @@ def trainer_price_promos(trainer_id: str, request: Request):
 def add_promo(payload: PromoCreate):
     if not payload.trainer_id:
         raise HTTPException(status_code=400, detail="trainer_id required")
+    if not payload.code or not payload.code.strip():
+        raise HTTPException(status_code=400, detail="promo code required")
     code = create_promo_code(payload.trainer_id, payload.code)
     return {"code": code}
 
