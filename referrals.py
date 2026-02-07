@@ -267,12 +267,18 @@ def create_trainer(name: str, login: Optional[str] = None, password: Optional[st
             "VALUES(?,?,?,?,?,?,?)",
             (trainer_id, login_value, salt_b64, hash_b64, password_value, _now(), _now())
         )
+        promo_code = generate_promo_code()
+        con.execute(
+            "INSERT INTO promo_codes(code, trainer_id, created_at, is_active) VALUES(?,?,?,1)",
+            (promo_code, trainer_id, _now())
+        )
         price_list = _insert_price_promos(con, trainer_id, price_promos)
         con.commit()
         return {
             "trainer_id": trainer_id,
             "login": login_value,
             "password": password_value,
+            "promo_code": promo_code,
             "price_promos": price_list,
         }
     finally:

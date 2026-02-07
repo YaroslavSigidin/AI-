@@ -201,11 +201,13 @@ def add_trainer(payload: TrainerCreate):
             "trainer_id": created["trainer_id"],
             "name": name,
             "login": created["login"],
+            "promo_code": created.get("promo_code"),
         },
         "credentials": {
             "login": created["login"],
             "password": created["password"],
         },
+        "promos": list_trainer_promos(created["trainer_id"]),
         "price_promos": list_trainer_price_promos(created["trainer_id"]),
     }
 

@@ -252,7 +252,7 @@ function openCredentialsModal(trainer, credentials) {
   const modal = qs("credentialsModal");
   qs("credentialsTitle").textContent = trainer?.name ? `Доступы: ${trainer.name}` : "Доступы тренера";
   const loginValue = credentials?.login || trainer?.login || "—";
-  const passwordValue = credentials?.password || "";
+  const passwordValue = credentials?.password || trainer?.password_plain || "";
   qs("credLogin").textContent = loginValue;
   qs("credPassword").textContent = passwordValue || "—";
   modal.classList.add("show");
