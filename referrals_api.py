@@ -16,6 +16,7 @@ from referrals import (
     delete_trainer,
     get_trainer_clients,
     get_user_trainer,
+    get_user_profile,
     get_user_paid_stats,
     verify_trainer_login,
     create_trainer_session,
@@ -281,11 +282,14 @@ def trainer_client_summary(trainer_id: str, user_id: int, request: Request, days
     paid = get_user_paid_stats(int(user_id))
     paid_until = _paid_until(int(user_id))
     workout_days = _workout_days(int(user_id), days=days)
+    profile = get_user_profile(int(user_id)) or {}
     return {
         "user_id": int(user_id),
         "trainer_id": trainer_id,
         "promo_code": client.get("promo_code"),
         "bound_at": client.get("bound_at"),
+        "full_name": profile.get("full_name"),
+        "username": profile.get("username"),
         "paid": paid,
         "paid_until": paid_until,
         "days_left": _days_left(paid_until),

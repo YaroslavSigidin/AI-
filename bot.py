@@ -54,7 +54,14 @@ from user_settings import get_preferences, update_preferences, get_goals, update
 from reminders import create_reminder, get_user_reminders, delete_reminder, toggle_reminder, format_reminder_time, get_due_reminders
 from notifications import get_users_for_notification, can_send_notification, mark_notification_sent
 from motivation_messages import generate_motivation_message
-from referrals import bind_user_to_trainer, bind_user_to_trainer_id, get_user_trainer, get_price_promo
+from referrals import (
+    bind_user_to_trainer,
+    bind_user_to_trainer_id,
+    get_user_trainer,
+    get_price_promo,
+    get_user_profile,
+    upsert_user_profile,
+)
 from stats_enhanced import (
     generate_streak_stats, generate_streak_summary_chart, 
     generate_streak_chart, generate_timeline_chart,
@@ -280,6 +287,26 @@ USER_MODE: dict[int, str] = {}  # 'sets' | 'meals' | 'plan'
 # USER_MODE используется для хранения режима пользователя (если нужно)
 USER_MODE: dict[int, str] = {}
 REFERRAL_PENDING: set[int] = set()
+NAME_PENDING: set[int] = set()
+
+
+def _onboarding_text() -> str:
+    return (
+        "Привет! Я AI‑тренер в Telegram.\n\n"
+        "Что умею:\n"
+        "• персональные планы питания и тренировок\n"
+        "• контроль прогресса и напоминания\n"
+        "• работа вместе с тренером\n\n"
+        "У тебя есть промокод от тренера или планируешь заниматься самостоятельно?"
+    )
+
+
+async def _ask_full_name(message: types.Message, uid: int) -> None:
+    NAME_PENDING.add(uid)
+    await message.answer(
+        "Как тебя назвать в системе?\n"
+        "Рекомендуем указать имя и фамилию."
+    )
 
 def _welcome_text() -> str:
     return (
@@ -301,29 +328,68 @@ def webapp_kb():
 @dp.message(Command("start", "open"))
 async def cmd_start(message: types.Message):
     uid = message.from_user.id if message.from_user else 0
-    if uid and not get_user_trainer(uid):
-        kb = InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(text="🎟️ Ввести промокод", callback_data="referral_enter"),
-            InlineKeyboardButton(text="Продолжить", callback_data="referral_skip")
-        ]])
-        await message.answer(
-            "У тебя есть промокод от тренера? Введи его, чтобы закрепиться за ним.",
-            reply_markup=kb
-        )
-        return
-    await message.answer(_welcome_text(), reply_markup=webapp_kb())
+    if uid:
+        profile = get_user_profile(uid)
+        if is_paid(uid):
+            if not profile:
+                await _ask_full_name(message, uid)
+                return
+            await message.answer(_welcome_text(), reply_markup=webapp_kb())
+            return
+    kb = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="Продолжить", callback_data="onboard_self"),
+        InlineKeyboardButton(text="Ввести промокод", callback_data="onboard_promo"),
+    ]])
+    await message.answer(_onboarding_text(), reply_markup=kb)
+    return
 
-@dp.callback_query(F.data == "referral_enter")
+@dp.callback_query(F.data == "onboard_promo")
 async def referral_enter(cb: CallbackQuery):
     uid = cb.from_user.id if cb.from_user else 0
     if uid:
         REFERRAL_PENDING.add(uid)
-    await cb.message.answer("Введи промокод от тренера (пример: TRAINER1).")
+    kb = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="Назад", callback_data="onboard_back")
+    ]])
+    await cb.message.answer("Введите промокод", reply_markup=kb)
     await cb.answer()
 
-@dp.callback_query(F.data == "referral_skip")
-async def referral_skip(cb: CallbackQuery):
-    await cb.message.answer(_welcome_text(), reply_markup=webapp_kb())
+@dp.callback_query(F.data == "onboard_back")
+async def referral_back(cb: CallbackQuery):
+    uid = cb.from_user.id if cb.from_user else 0
+    if uid:
+        REFERRAL_PENDING.discard(uid)
+    kb = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="Продолжить", callback_data="onboard_self"),
+        InlineKeyboardButton(text="Ввести промокод", callback_data="onboard_promo"),
+    ]])
+    await cb.message.answer(_onboarding_text(), reply_markup=kb)
+    await cb.answer()
+
+@dp.callback_query(F.data == "onboard_self")
+async def referral_self(cb: CallbackQuery):
+    uid = cb.from_user.id if cb.from_user else 0
+    if not uid:
+        await cb.answer()
+        return
+    try:
+        url, pid = await yk_create_payment_amount(
+            uid,
+            amount_rub=1000,
+            description="Подписка 1000₽ на 30 дней"
+        )
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="💳 Оплатить 1000₽", url=url)],
+            [InlineKeyboardButton(text="✅ Проверить оплату", callback_data=f"checkpay:{pid}")]
+        ])
+        await cb.message.answer(
+            "Оплата подписки:\n"
+            "1) Нажми «Оплатить»\n"
+            "2) После оплаты вернись сюда и нажми «Проверить оплату»",
+            reply_markup=kb
+        )
+    except Exception as e:
+        await cb.message.answer(f"⚠️ Не удалось создать оплату: {e}")
     await cb.answer()
 
 # Команды /1, /2, /3, /0 удалены
@@ -461,19 +527,69 @@ async def on_text(message: types.Message):
         return  # Команды обрабатываются отдельными обработчиками
     
     uid = message.from_user.id if message.from_user else 0
-    if uid in REFERRAL_PENDING:
-        if txt.lower() in {"пропустить", "skip"}:
-            REFERRAL_PENDING.discard(uid)
-            await message.answer("Ок, продолжаем без промокода.")
-            await message.answer(_welcome_text(), reply_markup=webapp_kb())
+    if uid in NAME_PENDING:
+        name_value = (txt or "").strip()
+        if len(name_value) < 2:
+            await message.answer("Укажи имя и фамилию (или хотя бы имя).")
             return
-        ok, msg, _trainer_id = bind_user_to_trainer(uid, txt)
-        if ok:
+        username = message.from_user.username if message.from_user else ""
+        trainer = get_user_trainer(uid)
+        trainer_id = trainer.get("trainer_id") if trainer else None
+        try:
+            upsert_user_profile(uid, name_value, username=username, trainer_id=trainer_id)
+        except Exception as e:
+            await message.answer(f"⚠️ Не удалось сохранить имя: {e}")
+            return
+        NAME_PENDING.discard(uid)
+        await message.answer("✅ Отлично! Профиль сохранен.")
+        await message.answer(_welcome_text(), reply_markup=webapp_kb())
+        return
+
+    if uid in REFERRAL_PENDING:
+        if txt.lower() in {"назад", "back"}:
             REFERRAL_PENDING.discard(uid)
-            await message.answer(f"✅ {msg}")
-            await message.answer(_welcome_text(), reply_markup=webapp_kb())
-        else:
-            await message.answer(f"⚠️ {msg}. Попробуй ещё раз или напиши «пропустить».")
+            kb = InlineKeyboardMarkup(inline_keyboard=[[
+                InlineKeyboardButton(text="Продолжить", callback_data="onboard_self"),
+                InlineKeyboardButton(text="Ввести промокод", callback_data="onboard_promo"),
+            ]])
+            await message.answer(_onboarding_text(), reply_markup=kb)
+            return
+        promo = txt.strip()
+        price_promo = get_price_promo(promo)
+        if not price_promo or not price_promo.get("is_active"):
+            await message.answer("⚠️ Промокод не найден. Попробуй ещё раз или нажми «Назад».")
+            return
+        if price_promo.get("used_by_user_id"):
+            await message.answer("⚠️ Этот промокод уже использован.")
+            return
+        trainer_id = price_promo.get("trainer_id")
+        if trainer_id:
+            ok, msg, _ = bind_user_to_trainer_id(uid, trainer_id, promo)
+            if not ok and "уже привязан" not in msg.lower():
+                await message.answer(f"⚠️ {msg}")
+                return
+        amount = price_promo.get("amount_rub") or 0
+        try:
+            url, pid = await yk_create_payment_amount(
+                uid,
+                amount_rub=amount,
+                description=f"Оплата по промокоду {promo}",
+                metadata={"promo_code": promo, "amount_rub": str(amount)}
+            )
+        except Exception as e:
+            await message.answer(f"⚠️ Не удалось создать платеж: {e}")
+            return
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text=f"💳 Оплатить {int(amount)}₽", url=url)],
+            [InlineKeyboardButton(text="✅ Проверить оплату", callback_data=f"checkpay:{pid}")]
+        ])
+        REFERRAL_PENDING.discard(uid)
+        await message.answer(
+            "Оплата по промокоду:\n"
+            "1) Нажми «Оплатить»\n"
+            "2) После оплаты вернись сюда и нажми «Проверить оплату»",
+            reply_markup=kb
+        )
         return
 
     # PROMO_ACCESS_GUARD_V1
@@ -795,6 +911,9 @@ async def _paywall_checkpay(call: CallbackQuery):
     ok, text = await yk_check_and_activate(uid, pid)
     if ok:
         await call.message.answer(text)
+        profile = get_user_profile(uid) if uid else None
+        if uid and not profile:
+            await _ask_full_name(call.message, uid)
         await call.answer("Готово ✅", show_alert=False)
     else:
         await call.answer(text, show_alert=True)

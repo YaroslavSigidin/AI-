@@ -86,6 +86,16 @@ def _connect() -> sqlite3.Connection:
         FOREIGN KEY (trainer_id) REFERENCES trainers(trainer_id)
     )
     """)
+    con.execute("""
+    CREATE TABLE IF NOT EXISTS user_profiles (
+        user_id INTEGER PRIMARY KEY,
+        full_name TEXT NOT NULL,
+        username TEXT,
+        trainer_id TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+    )
+    """)
     con.execute("CREATE INDEX IF NOT EXISTS idx_paid_events_trainer_time ON paid_events(trainer_id, paid_at)")
     con.execute("CREATE INDEX IF NOT EXISTS idx_promo_codes_trainer ON promo_codes(trainer_id)")
     con.execute("CREATE INDEX IF NOT EXISTS idx_price_promos_trainer ON trainer_price_promos(trainer_id)")
@@ -526,6 +536,48 @@ def get_user_trainer(user_id: int) -> Optional[Dict]:
         con.close()
 
 
+def get_user_profile(user_id: int) -> Optional[Dict]:
+    con = _connect()
+    try:
+        row = con.execute(
+            "SELECT full_name, username, trainer_id, created_at, updated_at FROM user_profiles WHERE user_id=?",
+            (int(user_id),)
+        ).fetchone()
+        if not row:
+            return None
+        return {
+            "user_id": int(user_id),
+            "full_name": row[0],
+            "username": row[1] or "",
+            "trainer_id": row[2],
+            "created_at": int(row[3]),
+            "updated_at": int(row[4]),
+        }
+    finally:
+        con.close()
+
+
+def upsert_user_profile(user_id: int, full_name: str, username: Optional[str] = None,
+                        trainer_id: Optional[str] = None) -> None:
+    name_value = (full_name or "").strip()
+    if not name_value:
+        raise ValueError("full_name required")
+    uname_value = (username or "").strip()
+    now = _now()
+    con = _connect()
+    try:
+        con.execute(
+            "INSERT INTO user_profiles(user_id, full_name, username, trainer_id, created_at, updated_at) "
+            "VALUES(?,?,?,?,?,?) "
+            "ON CONFLICT(user_id) DO UPDATE SET full_name=excluded.full_name, username=excluded.username, "
+            "trainer_id=excluded.trainer_id, updated_at=excluded.updated_at",
+            (int(user_id), name_value, uname_value, trainer_id, now, now)
+        )
+        con.commit()
+    finally:
+        con.close()
+
+
 def record_paid_event(user_id: int, amount_rub: float, paid_at: Optional[int] = None) -> bool:
     paid_at = paid_at or _now()
     ref = get_user_trainer(user_id)
@@ -706,13 +758,32 @@ def get_trainer_clients(trainer_id: str, days: int) -> List[Dict]:
             "SELECT user_id, promo_code, bound_at FROM user_referrals WHERE trainer_id=? AND bound_at>=? ORDER BY bound_at DESC",
             (trainer_id, since)
         ).fetchall()
-        return [
-            {
-                "user_id": int(r[0]),
-                "promo_code": r[1],
-                "bound_at": r[2]
-            }
-            for r in rows
-        ]
+        user_ids = [int(r[0]) for r in rows]
+        profiles = {}
+        if user_ids:
+            placeholders = ",".join("?" for _ in user_ids)
+            p_rows = con.execute(
+                f"SELECT user_id, full_name, username FROM user_profiles WHERE user_id IN ({placeholders})",
+                user_ids
+            ).fetchall()
+            for uid, full_name, username in p_rows:
+                profiles[int(uid)] = {
+                    "full_name": full_name,
+                    "username": username or ""
+                }
+        result = []
+        for r in rows:
+            uid = int(r[0])
+            prof = profiles.get(uid, {})
+            result.append(
+                {
+                    "user_id": uid,
+                    "promo_code": r[1],
+                    "bound_at": r[2],
+                    "full_name": prof.get("full_name"),
+                    "username": prof.get("username"),
+                }
+            )
+        return result
     finally:
         con.close()
