@@ -320,9 +320,17 @@ def _welcome_text() -> str:
         "Или просто пришли мне голосовое — разберёмся по ходу 😉"
     )
 
-def webapp_kb():
+def _with_user_param(url: str, user_id: Optional[int]) -> str:
+    if not user_id:
+        return url
+    sep = "&" if "?" in url else "?"
+    return f"{url}{sep}user_id={int(user_id)}"
+
+
+def webapp_kb(user_id: Optional[int] = None):
+    url = _with_user_param(WEBAPP_URL, user_id)
     return InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="Открыть", web_app=WebAppInfo(url=WEBAPP_URL))
+        InlineKeyboardButton(text="Открыть", web_app=WebAppInfo(url=url))
     ]])
 
 @dp.message(Command("start", "open"))
@@ -334,7 +342,7 @@ async def cmd_start(message: types.Message):
             if not profile:
                 await _ask_full_name(message, uid)
                 return
-            await message.answer(_welcome_text(), reply_markup=webapp_kb())
+            await message.answer(_welcome_text(), reply_markup=webapp_kb(uid))
             return
     kb = InlineKeyboardMarkup(inline_keyboard=[[
         InlineKeyboardButton(text="Продолжить", callback_data="onboard_self"),
@@ -542,7 +550,7 @@ async def on_text(message: types.Message):
             return
         NAME_PENDING.discard(uid)
         await message.answer("✅ Отлично! Профиль сохранен.")
-        await message.answer(_welcome_text(), reply_markup=webapp_kb())
+        await message.answer(_welcome_text(), reply_markup=webapp_kb(uid))
         return
 
     if uid in REFERRAL_PENDING:
