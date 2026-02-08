@@ -1,5 +1,6 @@
 import os
 import asyncio
+from typing import Optional
 from aiogram import Bot, Dispatcher, F, types, BaseMiddleware
 from aiogram.filters import Command, CommandObject
 from aiogram.filters.command import CommandStart
