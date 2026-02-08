@@ -217,6 +217,20 @@ function formatDateLabel(date){
   return { day, weekday };
 }
 
+function parseISODate(value){
+  if (!value) return new Date();
+  const parts = value.split("-").map(Number);
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return new Date(value);
+  return new Date(parts[0], parts[1] - 1, parts[2]);
+}
+
+function toISO(date){
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function startOfWeek(date){
   const d = new Date(date);
   const day = d.getDay();
@@ -226,13 +240,9 @@ function startOfWeek(date){
   return d;
 }
 
-function toISO(date){
-  return date.toISOString().slice(0, 10);
-}
-
 function setSelectedDate(iso){
   qs("planDate").value = iso;
-  dateBase = startOfWeek(new Date(iso));
+  dateBase = startOfWeek(parseISODate(iso));
   renderDateStrip();
   loadPlans();
 }
@@ -240,7 +250,7 @@ function setSelectedDate(iso){
 function renderDateStrip(){
   const track = qs("dateTrack");
   track.innerHTML = "";
-  const base = dateBase || startOfWeek(new Date(qs("planDate").value || todayISO()));
+  const base = dateBase || startOfWeek(parseISODate(qs("planDate").value || todayISO()));
   const start = new Date(base);
   const end = new Date(base);
   end.setDate(end.getDate() + 6);
@@ -294,7 +304,7 @@ async function savePlan(kind, text){
 }
 
 qs("planDate").value = todayISO();
-dateBase = startOfWeek(new Date(qs("planDate").value));
+dateBase = startOfWeek(parseISODate(qs("planDate").value));
 renderDateStrip();
 
 qs("planDate").addEventListener("change", () => {
@@ -302,10 +312,10 @@ qs("planDate").addEventListener("change", () => {
 });
 
 qs("datePrev").addEventListener("click", () => {
-  const base = dateBase || startOfWeek(new Date(qs("planDate").value));
+  const base = dateBase || startOfWeek(parseISODate(qs("planDate").value));
   base.setDate(base.getDate() - 7);
   dateBase = base;
-  const selected = new Date(qs("planDate").value);
+  const selected = parseISODate(qs("planDate").value);
   if (selected < base || selected > new Date(base.getTime() + 6 * 86400000)) {
     setSelectedDate(toISO(base));
     return;
@@ -314,10 +324,10 @@ qs("datePrev").addEventListener("click", () => {
 });
 
 qs("dateNext").addEventListener("click", () => {
-  const base = dateBase || startOfWeek(new Date(qs("planDate").value));
+  const base = dateBase || startOfWeek(parseISODate(qs("planDate").value));
   base.setDate(base.getDate() + 7);
   dateBase = base;
-  const selected = new Date(qs("planDate").value);
+  const selected = parseISODate(qs("planDate").value);
   if (selected < base || selected > new Date(base.getTime() + 6 * 86400000)) {
     setSelectedDate(toISO(base));
     return;
