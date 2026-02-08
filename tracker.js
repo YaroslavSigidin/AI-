@@ -1081,11 +1081,11 @@
   async function loadNote(){
     setStatus("Загрузка…");
     try{
-      // На странице "План" всегда используем kind="plan"
+      // На странице "План" используем "plan" для тренировок и "meals" для питания
       // На странице "Результаты" используем kind из вкладки (workouts/meals)
-      const kind = state.currentPage === "plan"
-        ? (state.planKind === "meals" ? "meals" : "plan")
-        : state.kind;
+      const isPlanPage = state.currentPage === "plan";
+      const isPlanMeals = isPlanPage && state.planKind === "meals";
+      const kind = isPlanPage ? (isPlanMeals ? "meals" : "plan") : state.kind;
       
       // Убеждаемся, что user_id есть (даже если это "0")
       const uid = getUserId() || "0";
@@ -1095,7 +1095,17 @@
         state.kind = "workouts"; // По умолчанию
       }
       
-      const j = await apiGetNote(state.day, kind);
+      let j = await apiGetNote(state.day, kind);
+      // Совместимость со старым хранением: план тренировок мог сохраняться в kind="workouts"
+      if (isPlanPage && !isPlanMeals) {
+        const hasText = (j?.text || "").trim();
+        if (!hasText) {
+          const legacy = await apiGetNote(state.day, "workouts");
+          if ((legacy?.text || "").trim()) {
+            j = legacy;
+          }
+        }
+      }
       const noteEl = state.currentPage === "plan" ? $("#notePlan") : 
                      state.currentPage === "results" ? $("#noteResults") : $("#note");
       if (noteEl) {
@@ -1350,11 +1360,11 @@
     if (val === state.lastLoadedText) return;
     setStatus("Сохранение…");
     try{
-      // На странице "План" всегда используем kind="plan"
+      // На странице "План" используем "plan" для тренировок и "meals" для питания
       // На странице "Результаты" используем kind из вкладки (workouts/meals)
-      let kind = state.currentPage === "plan"
-        ? (state.planKind === "meals" ? "meals" : "plan")
-        : state.kind;
+      const isPlanPage = state.currentPage === "plan";
+      const isPlanMeals = isPlanPage && state.planKind === "meals";
+      let kind = isPlanPage ? (isPlanMeals ? "meals" : "plan") : state.kind;
       
       // Для страницы "Результаты" убеждаемся, что kind установлен
       if (state.currentPage === "results" && !kind) {
@@ -1363,6 +1373,14 @@
       }
       
       await apiPut(state.day, kind, val);
+      // Совместимость: если это план тренировок, дублируем в kind="workouts"
+      if (isPlanPage && !isPlanMeals) {
+        try {
+          await apiPut(state.day, "workouts", val);
+        } catch (e) {
+          console.warn("Не удалось сохранить план в legacy kind=workouts:", e);
+        }
+      }
       state.lastLoadedText = val;
       setStatus(`✓ Сохранено · ${state.day}`);
       
