@@ -11,6 +11,8 @@ services:
     volumes:
       # Bind mount: код на хосте монтируется в контейнер
       - ./:/app
+      # Tracker DB shared with tg-miniapp stack
+      - /root/tg-miniapp/data:/data
     command: python bot.py
     networks:
       - default
