@@ -1064,7 +1064,8 @@
 
   function getNoteValue(noteEl){
     if (!noteEl) return "";
-    if (noteEl.matches && noteEl.matches('[contenteditable="true"]')) {
+    // Для contenteditable элементов (включая заблокированные) используем innerText
+    if (noteEl.getAttribute && noteEl.getAttribute("contenteditable") !== null) {
       const text = (noteEl.innerText || "").replace(/\r/g, "");
       return text === "\n" ? "" : text;
     }
@@ -1073,7 +1074,8 @@
 
   function setNoteValue(noteEl, value){
     if (!noteEl) return;
-    if (noteEl.matches && noteEl.matches('[contenteditable="true"]')) {
+    // Для contenteditable элементов (включая заблокированные) ставим textContent
+    if (noteEl.getAttribute && noteEl.getAttribute("contenteditable") !== null) {
       noteEl.textContent = value || "";
       return;
     }
