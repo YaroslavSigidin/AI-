@@ -286,6 +286,19 @@ button:disabled {
   gap: 6px;
   margin-top: 8px;
 }
+.popover .promo-add.promo-add-price {
+  flex-wrap: wrap;
+}
+.popover .promo-add.promo-add-price input[type="number"] {
+  width: 72px;
+  flex: 0 0 auto;
+}
+.popover .promo-add.promo-add-price input[type="text"] {
+  flex: 1 1 auto;
+}
+.popover .promo-add.promo-add-price button {
+  width: 100%;
+}
 .popover .promo-add input {
   min-width: 0;
   flex: 1;

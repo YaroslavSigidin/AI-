@@ -11,6 +11,7 @@ from referrals import (
     list_trainers_with_stats,
     create_trainer,
     create_promo_code,
+    add_price_promo,
     list_trainer_promos,
     list_trainer_price_promos,
     delete_trainer,
@@ -49,6 +50,12 @@ class TrainerLogin(BaseModel):
 
 class PromoCreate(BaseModel):
     trainer_id: str
+    code: str | None = None
+
+
+class PricePromoCreate(BaseModel):
+    trainer_id: str
+    amount_rub: float
     code: str | None = None
 
 
@@ -244,8 +251,22 @@ def add_promo(payload: PromoCreate):
         raise HTTPException(status_code=400, detail="trainer_id required")
     if not payload.code or not payload.code.strip():
         raise HTTPException(status_code=400, detail="promo code required")
-    code = create_promo_code(payload.trainer_id, payload.code)
-    return {"code": code}
+    try:
+        code = create_promo_code(payload.trainer_id, payload.code)
+        return {"code": code}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/admin/referrals/price-promos")
+def add_price_promo_code(payload: PricePromoCreate):
+    if not payload.trainer_id:
+        raise HTTPException(status_code=400, detail="trainer_id required")
+    try:
+        created = add_price_promo(payload.trainer_id, payload.amount_rub, payload.code)
+        return {"code": created["code"], "amount_rub": created["amount_rub"]}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.delete("/admin/referrals/trainers/{trainer_id}")

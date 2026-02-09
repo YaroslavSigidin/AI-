@@ -347,7 +347,44 @@ def create_promo_code(trainer_id: str, code: Optional[str] = None) -> str:
             (code, trainer_id, _now())
         )
         con.commit()
-        return code
+    return code
+
+
+def add_price_promo(trainer_id: str, amount_rub: float, code: Optional[str] = None) -> Dict:
+    trainer_id = (trainer_id or "").strip()
+    if not trainer_id:
+        raise ValueError("trainer_id required")
+    try:
+        amount_value = float(amount_rub)
+    except Exception:
+        raise ValueError("invalid amount")
+    if amount_value <= 0:
+        raise ValueError("amount must be positive")
+
+    con = _connect()
+    try:
+        if code:
+            code = _validate_promo(code)
+        else:
+            code = _generate_price_promo_code(int(round(amount_value)), con)
+
+        row = con.execute("SELECT code FROM trainer_price_promos WHERE code=?", (code,)).fetchone()
+        row2 = con.execute("SELECT code FROM promo_codes WHERE code=?", (code,)).fetchone()
+        if row or row2:
+            raise ValueError(f"promo code {code} already exists")
+
+        con.execute(
+            "INSERT INTO trainer_price_promos(code, trainer_id, amount_rub, created_at, is_active) VALUES(?,?,?,?,1)",
+            (code, trainer_id, float(amount_value), _now())
+        )
+        con.execute(
+            "INSERT OR IGNORE INTO promo_codes(code, trainer_id, created_at, is_active) VALUES(?,?,?,1)",
+            (code, trainer_id, _now())
+        )
+        con.commit()
+        return {"code": code, "amount_rub": amount_value}
+    finally:
+        con.close()
     finally:
         con.close()
 

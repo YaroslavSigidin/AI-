@@ -116,6 +116,11 @@ function renderTrainers(trainers) {
           ${pricePromos.length ? pricePromos.map(item => `
             <div class="code-row"><span>${Math.round(item.amount_rub)} ₽</span><strong>${item.code}</strong></div>
           `).join("") : `<div class="code-row"><span>—</span><span>Нет</span></div>`}
+          <div class="promo-add promo-add-price">
+            <input type="number" min="1" step="1" placeholder="Цена, ₽" data-new-price-amount="${t.trainer_id}">
+            <input type="text" placeholder="Промокод" data-new-price-code="${t.trainer_id}">
+            <button type="button" data-add-price-promo="${t.trainer_id}">Добавить</button>
+          </div>
           <h4>Общие промокоды</h4>
           ${generalPromos.length ? generalPromos.map(code => `
             <div class="code-row"><span>Код</span><strong>${code}</strong></div>
@@ -405,13 +410,43 @@ qs("trainersTable").addEventListener("click", async (e) => {
       showToast("Введите промокод");
       return;
     }
-    await api("/admin/referrals/promos", {
-      method: "POST",
-      body: JSON.stringify({ trainer_id: trainerId, code: value }),
-    });
-    if (input) input.value = "";
-    await loadTrainers();
-    showToast("Промокод добавлен");
+    try {
+      await api("/admin/referrals/promos", {
+        method: "POST",
+        body: JSON.stringify({ trainer_id: trainerId, code: value }),
+      });
+      if (input) input.value = "";
+      await loadTrainers();
+      showToast("Промокод добавлен");
+    } catch (e) {
+      showToast(e.message || "Ошибка добавления");
+    }
+    return;
+  }
+
+  const addPricePromoBtn = e.target.closest("[data-add-price-promo]");
+  if (addPricePromoBtn) {
+    const trainerId = addPricePromoBtn.dataset.addPricePromo;
+    const amountEl = document.querySelector(`[data-new-price-amount="${trainerId}"]`);
+    const codeEl = document.querySelector(`[data-new-price-code="${trainerId}"]`);
+    const amount = Number((amountEl?.value || "").trim());
+    const code = (codeEl?.value || "").trim();
+    if (!amount || amount <= 0) {
+      showToast("Введите цену");
+      return;
+    }
+    try {
+      await api("/admin/referrals/price-promos", {
+        method: "POST",
+        body: JSON.stringify({ trainer_id: trainerId, amount_rub: amount, code: code || null }),
+      });
+      if (amountEl) amountEl.value = "";
+      if (codeEl) codeEl.value = "";
+      await loadTrainers();
+      showToast("Ценовой промокод добавлен");
+    } catch (e) {
+      showToast(e.message || "Ошибка добавления");
+    }
     return;
   }
 });
