@@ -34,7 +34,7 @@
       }
       const host = (window.location && window.location.hostname) ? window.location.hostname : "";
       if (host === "sport-helper-robot.online") {
-        return "https://sport-helper-robot.ru";
+        return "https://sport-helper-robot.online";
       }
       return "";
     } catch (e) {
