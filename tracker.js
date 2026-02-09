@@ -28,13 +28,15 @@
       const fromQuery = (params.get("api_base") || params.get("apiBase") || "").trim();
       const fromStorage = (localStorage.getItem("api_base") || "").trim();
       const fromWindow = (window.API_BASE || "").toString().trim();
+      const host = (window.location && window.location.hostname) ? window.location.hostname : "";
+      if (host === "sport-helper-robot.online") {
+        const forced = "https://sport-helper-robot.online";
+        try { localStorage.setItem("api_base", forced); } catch (e) {}
+        return forced;
+      }
       const value = fromWindow || fromQuery || fromStorage;
       if (value) {
         return value.replace(/\/+$/, "");
-      }
-      const host = (window.location && window.location.hostname) ? window.location.hostname : "";
-      if (host === "sport-helper-robot.online") {
-        return "https://sport-helper-robot.online";
       }
       return "";
     } catch (e) {
