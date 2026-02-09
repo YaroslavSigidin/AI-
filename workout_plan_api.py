@@ -142,6 +142,17 @@ def _parse_plan(plan_text: str) -> List[Dict]:
     lines = plan_text.split('\n')
     skip_sections = ['разминка', 'разогрев', 'заминка', 'основная часть', 'основная', 'warm-up', 'cool-down']
     
+    def _build_sets(num_sets: int, reps: str = "", weight_kg: Optional[str] = None, info: str = "") -> List[Dict]:
+        sets = []
+        for i in range(1, num_sets + 1):
+            sets.append({
+                'number': i,
+                'info': info or reps,
+                'reps': reps,
+                'weight_kg': weight_kg
+            })
+        return sets
+
     for line in lines:
         line = line.strip()
         if not line:
@@ -161,6 +172,49 @@ def _parse_plan(plan_text: str) -> List[Dict]:
                 current_exercise = None
             continue
         
+        # Паттерны без двоеточия:
+        # 1) "Жим лежа 3 подхода по 50 повторений"
+        m = re.match(r'^(.+?)\s+(\d+)\s*подход[а-я]*\s*(?:по\s*)?(.+)$', line_clean, re.IGNORECASE)
+        if m:
+            exercise_name = m.group(1).strip()
+            num_sets = int(m.group(2))
+            reps_info = m.group(3).strip()
+            reps = re.sub(r'\s*повторени[яй]?\s*', '', reps_info, flags=re.IGNORECASE).strip()
+            current_exercise = {
+                'name': exercise_name,
+                'sets': _build_sets(num_sets, reps=reps, info=reps_info)
+            }
+            exercises.append(current_exercise)
+            current_exercise = None
+            continue
+
+        # 2) "100 отжиманий по 3 подхода"
+        m = re.match(r'^(\d+)\s+(.+?)\s+по\s+(\d+)\s*подход[а-я]*$', line_clean, re.IGNORECASE)
+        if m:
+            reps = m.group(1).strip()
+            exercise_name = m.group(2).strip()
+            num_sets = int(m.group(3))
+            current_exercise = {
+                'name': exercise_name,
+                'sets': _build_sets(num_sets, reps=reps, info=f"{reps} повторений")
+            }
+            exercises.append(current_exercise)
+            current_exercise = None
+            continue
+
+        # 3) "20 приседаний" / "20 отжиманий"
+        m = re.match(r'^(\d+)\s+([^\d]+)$', line_clean)
+        if m and "кг" not in line_lower and "подход" not in line_lower:
+            reps = m.group(1).strip()
+            exercise_name = m.group(2).strip()
+            current_exercise = {
+                'name': exercise_name,
+                'sets': _build_sets(1, reps=reps, info=f"{reps} повторений")
+            }
+            exercises.append(current_exercise)
+            current_exercise = None
+            continue
+
         # Проверяем формат: "Упражнение: 4х8-10" или "Упражнение: 4 подхода по 10-12"
         # Улучшенный паттерн для поддержки названий в скобках: "Бабочка (сведение рук): 4х8-10"
         colon_match = re.match(r'^(.+?):\s*(.+)', line_clean)
@@ -481,7 +535,7 @@ async def get_today_workout_plan(x_user_id: str = Header(None, alias="X-User-Id"
     moscow_tz = timezone(timedelta(hours=3))
     today = datetime.now(moscow_tz).strftime("%Y-%m-%d")
     
-    # Получаем план на сегодня (только из kind='plan')
+    # Получаем план на сегодня (kind='plan', fallback на legacy kind='workouts')
     conn = _db()
     try:
         row = conn.execute("""
@@ -489,6 +543,12 @@ async def get_today_workout_plan(x_user_id: str = Header(None, alias="X-User-Id"
             WHERE user_id = ? AND d = ? AND kind = 'plan'
         """, (user_id, today)).fetchone()
         plan_text = row[0] if row else ""
+        if not plan_text:
+            row = conn.execute("""
+                SELECT text FROM notes
+                WHERE user_id = ? AND d = ? AND kind = 'workouts'
+            """, (user_id, today)).fetchone()
+            plan_text = row[0] if row else ""
     finally:
         conn.close()
     
